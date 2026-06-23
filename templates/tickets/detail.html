@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">{{ ticket.number }}</p>
+      <h1>{{ ticket.title }}</h1>
+      <p>{{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
+      <p class="meta">Prazo: {{ ticket.deadline_label }}{% if ticket.is_overdue %} | Em atraso{% endif %}</p>
+    </div>
+    <div class="ticket-head__status">
+      {% if ticket.is_overdue %}
+        <span class="pill pill-closed">Em atraso</span>
+      {% endif %}
+      <span class="pill pill-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+    </div>
+  </div>
+
+  {% if ticket.is_overdue %}
+    <div class="alert error">
+      <strong>Este chamado esta em atraso.</strong>
+      <div>O prazo estimado foi ultrapassado e o responsavel deve priorizar a tratativa.</div>
+    </div>
+  {% endif %}
+
+  <div class="grid-2">
+    <article class="card">
+      <h2>Descricao</h2>
+      <p>{{ ticket.description|linebreaksbr }}</p>
+      <hr>
+      <p><strong>Solicitante:</strong> {{ ticket.requester.full_name }}</p>
+      <p><strong>Responsavel:</strong> {{ ticket.assigned_to.full_name|default:"Nao definido" }}</p>
+      <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y H:i" }}</p>
+      <p><strong>Prazo:</strong> {{ ticket.deadline_label }}</p>
+    </article>
+
+    <article class="card">
+      <h2>Status</h2>
+      <form method="post" class="form-stack">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="status">
+        {{ status_form.status }}
+        {{ status_form.message }}
+        <button class="primary" type="submit">Atualizar status</button>
+      </form>
+      <hr>
+      <form method="post" enctype="multipart/form-data" class="form-stack">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="attachment">
+        {{ attachment_form.file }}
+        <button type="submit">Enviar anexo</button>
+      </form>
+    </article>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Historico</h2>
+  </div>
+  <div class="stack">
+    {% for event in ticket.events.all %}
+      <article class="card event-card">
+        <div class="ticket-head">
+          <strong>{{ event.get_kind_display }}</strong>
+          <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <p>{{ event.message }}</p>
+        <small>Por {{ event.actor.full_name }}</small>
+      </article>
+    {% empty %}
+      <div class="card muted">Nenhum registro ainda.</div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="grid-2">
+    <article class="card">
+      <h2>Comentario</h2>
+      <form method="post" class="form-stack">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="comment">
+        {{ comment_form.message }}
+        <button class="primary" type="submit">Adicionar comentario</button>
+      </form>
+    </article>
+
+    <article class="card">
+      <h2>Anexos</h2>
+      <div class="stack compact">
+        {% for attachment in ticket.attachments.all %}
+          <a class="attachment" href="{{ attachment.file.url }}" target="_blank" rel="noreferrer">{{ attachment.original_name }}</a>
+        {% empty %}
+          <div class="muted">Nenhum anexo enviado.</div>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+</section>
+{% endblock %}

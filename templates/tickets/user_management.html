@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Usuarios</p>
+      <h1>Gestao de usuarios</h1>
+    </div>
+    <a class="primary link-button" href="{% url 'user_create' %}">Novo usuario</a>
+  </div>
+
+  <form class="card filters" method="get">
+    <div class="filter-grid">
+      <input type="search" name="q" value="{{ search }}" placeholder="Buscar por nome, matricula ou e-mail">
+      <button class="primary" type="submit">Filtrar</button>
+    </div>
+  </form>
+</section>
+
+<section class="section">
+  <div class="stack">
+    {% for user in users %}
+      <article class="card">
+        <div class="ticket-head">
+          <strong>{{ user.full_name }}</strong>
+          <a href="{% url 'user_edit' user.pk %}">Editar</a>
+        </div>
+        <p>{{ user.matricula }} | {{ user.email }}</p>
+        <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem area" }} - {{ user.get_cargo_display }}</p>
+      </article>
+    {% empty %}
+      <div class="card muted">Nenhum usuario encontrado.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
+

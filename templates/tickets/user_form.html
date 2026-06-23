@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Cadastro</p>
+      <h1>{{ title }}</h1>
+    </div>
+  </div>
+  <form class="card form-stack" method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="alert error">
+        <strong>Não foi possível salvar o usuário.</strong>
+        <div>Confira os campos destacados abaixo.</div>
+      </div>
+    {% endif %}
+    <label>Nome completo {{ form.full_name }}</label>
+    {{ form.full_name.errors }}
+    <label>E-mail {{ form.email }}</label>
+    {{ form.email.errors }}
+    <label>Matricula {{ form.matricula }}</label>
+    {{ form.matricula.errors }}
+    <label>Vinculo {{ form.vinculo }}</label>
+    {{ form.vinculo.errors }}
+    <label>Area {{ form.area }}</label>
+    {{ form.area.errors }}
+    <label>Cargo {{ form.cargo }}</label>
+    {{ form.cargo.errors }}
+
+    {% if form.password1 %}
+      <label>Senha {{ form.password1 }}</label>
+      {{ form.password1.errors }}
+      <label>Confirmar senha {{ form.password2 }}</label>
+      {{ form.password2.errors }}
+    {% endif %}
+
+    <button class="primary" type="submit">Salvar usuario</button>
+  </form>
+</section>
+
+<script>
+  (function () {
+    const vinculoField = document.getElementById("id_vinculo");
+    const areaField = document.getElementById("id_area");
+    const cargoField = document.getElementById("id_cargo");
+    if (!vinculoField || !areaField || !cargoField) return;
+
+    const endpoint = "{% url 'user_roles_api' %}";
+    const selectedCargo = cargoField.value;
+    const areaOptions = [
+      { value: "", label: "Selecione a area" },
+      { value: "TI", label: "Tecnologia da Informacao" },
+      { value: "DIRECAO", label: "Direcao" },
+      { value: "VICE_DIRECAO", label: "Vice-Direcao" },
+      { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao Pedagogica" },
+      { value: "COORDENACAO_TECNICA", label: "Coordenacao Tecnica" },
+      { value: "BIBLIOTECA", label: "Biblioteca" },
+      { value: "LABORATORIO_ENSINO", label: "Tecnico de Laboratorio de Ensino" },
+      { value: "STAI", label: "Coordenacao de STAI" },
+      { value: "SECRETARIA_ESCOLAR", label: "Secretaria Escolar" },
+      { value: "PSICOLOGIA_ESCOLAR", label: "Psicologia Escolar" },
+      { value: "DOCENCIA", label: "Docencia" },
+    ];
+
+    function setOptions(roles) {
+      cargoField.innerHTML = '<option value="">Selecione o cargo</option>';
+      roles.forEach((role) => {
+        const option = document.createElement("option");
+        option.value = role.value;
+        option.textContent = role.label;
+        if (String(role.value) === String(selectedCargo)) {
+          option.selected = true;
+        }
+        cargoField.appendChild(option);
+      });
+    }
+
+    function setAreaOptions(allowDocencia) {
+      const selectedArea = areaField.value;
+      const filtered = allowDocencia ? areaOptions : areaOptions.filter((item) => item.value !== "DOCENCIA");
+      areaField.innerHTML = "";
+      filtered.forEach((area) => {
+        const option = document.createElement("option");
+        option.value = area.value;
+        option.textContent = area.label;
+        if (String(area.value) === String(selectedArea)) {
+          option.selected = true;
+        }
+        areaField.appendChild(option);
+      });
+    }
+
+    async function loadRoles() {
+      const vinculo = vinculoField.value;
+      const area = areaField.value;
+      if (!vinculo) {
+        setOptions([]);
+        return;
+      }
+      const response = await fetch(`${endpoint}?vinculo=${encodeURIComponent(vinculo)}&area=${encodeURIComponent(area)}`);
+      const payload = await response.json();
+      setOptions(payload.roles || []);
+    }
+
+    vinculoField.addEventListener("change", () => {
+      if (vinculoField.value === "PROFESSOR") {
+        setAreaOptions(true);
+        areaField.value = "DOCENCIA";
+        areaField.disabled = true;
+      } else {
+        setAreaOptions(false);
+        areaField.disabled = false;
+        if (areaField.value === "DOCENCIA") {
+          areaField.value = "";
+        }
+      }
+      loadRoles();
+    });
+
+    areaField.addEventListener("change", () => {
+      if (vinculoField.value === "ADMINISTRATIVO") {
+        loadRoles();
+      }
+    });
+
+    setAreaOptions(vinculoField.value === "PROFESSOR");
+    loadRoles();
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Resumo rapido</p>
+      <h1>Bem-vindo, {{ user.full_name }}</h1>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat card"><span>Abertos</span><strong>{{ counts.open }}</strong></div>
+    <div class="stat card"><span>Em tratativa</span><strong>{{ counts.progress }}</strong></div>
+    <div class="stat card"><span>Encerrados</span><strong>{{ counts.closed }}</strong></div>
+    <div class="stat card"><span>Concluidos</span><strong>{{ counts.done }}</strong></div>
+  </div>
+</section>
+
+{% if overdue_count %}
+<section class="section">
+  <div class="alert error">
+    <strong>Ha {{ overdue_count }} chamado(s) em atraso.</strong>
+    <div>Verifique os chamados com prazo expirado para evitar novas pendencias.</div>
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="section-head">
+    <h2>Recentes</h2>
+    <a href="{% url 'ticket_list' %}">Ver todos</a>
+  </div>
+  <div class="stack">
+    {% if overdue_tickets %}
+      <div class="card">
+        <h3>Chamados em atraso</h3>
+        <div class="stack compact">
+          {% for ticket in overdue_tickets %}
+            <a class="attachment" href="{% url 'ticket_detail' ticket.pk %}">
+              <strong>{{ ticket.number }}</strong> - {{ ticket.title }}
+              <div class="meta">Prazo: {{ ticket.deadline_label }}</div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    {% for ticket in recent_tickets %}
+      <a class="card ticket-card" href="{% url 'ticket_detail' ticket.pk %}">
+        <div class="ticket-head">
+          <strong>{{ ticket.number }}</strong>
+          <span class="pill pill-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+        </div>
+        <h3>{{ ticket.title }}</h3>
+        <p>{{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
+        <p class="meta">Prazo: {{ ticket.deadline_label }}{% if ticket.is_overdue %} | Em atraso{% endif %}</p>
+      </a>
+    {% empty %}
+      <div class="card muted">Nenhum chamado encontrado.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Chamados</p>
+      <h1>Fila de atendimento</h1>
+    </div>
+    <a class="primary link-button" href="{% url 'ticket_create' %}">Abrir chamado</a>
+  </div>
+
+  <form class="filters card" method="get">
+    <div class="tabs">
+      {% for tab_key, tab_label in tabs %}
+        <a class="tab {% if scope == tab_key %}active{% endif %}" href="?scope={{ tab_key }}{% if status %}&status={{ status }}{% endif %}{% if search %}&q={{ search }}{% endif %}">{{ tab_label }}</a>
+      {% endfor %}
+    </div>
+    <div class="filter-grid">
+      <input type="search" name="q" value="{{ search }}" placeholder="Buscar por titulo, descricao ou numero">
+      <select name="status">
+        <option value="">Todos os status</option>
+        <option value="OPEN" {% if status == "OPEN" %}selected{% endif %}>Aberto</option>
+        <option value="IN_PROGRESS" {% if status == "IN_PROGRESS" %}selected{% endif %}>Em tratativa</option>
+        <option value="FORWARDED" {% if status == "FORWARDED" %}selected{% endif %}>Encaminhado</option>
+        <option value="CLOSED" {% if status == "CLOSED" %}selected{% endif %}>Encerrado</option>
+        <option value="DONE" {% if status == "DONE" %}selected{% endif %}>Concluido</option>
+      </select>
+      <button class="primary" type="submit">Filtrar</button>
+    </div>
+  </form>
+</section>
+
+<section class="section">
+  <div class="stack">
+    {% for ticket in tickets %}
+      <a class="card ticket-card" href="{% url 'ticket_detail' ticket.pk %}">
+        <div class="ticket-head">
+          <strong>{{ ticket.number }}</strong>
+          <div class="ticket-head__status">
+            {% if ticket.is_overdue %}
+              <span class="pill pill-closed">Em atraso</span>
+            {% endif %}
+            <span class="pill pill-{{ ticket.status|lower }}">{{ ticket.get_status_display }}</span>
+          </div>
+        </div>
+        <h3>{{ ticket.title }}</h3>
+        <p>{{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
+        <p class="meta">Prazo: {{ ticket.deadline_label }}</p>
+        <small>Solicitante: {{ ticket.requester.full_name }}</small>
+      </a>
+    {% empty %}
+      <div class="card muted">Nenhum chamado encontrado com estes filtros.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Anuncios</p>
+      <h1>Gestao de anuncios</h1>
+    </div>
+    <a class="primary link-button" href="{% url 'announcement_create' %}">Novo comunicado</a>
+  </div>
+
+  <form class="card filters" method="get">
+    <div class="filter-grid">
+      <input type="search" name="q" value="{{ search }}" placeholder="Buscar por titulo ou texto">
+      <button class="primary" type="submit">Filtrar</button>
+    </div>
+  </form>
+</section>
+
+<section class="section">
+  <div class="stack">
+    {% for item in announcements %}
+      {% with announcement=item.announcement %}
+      <article class="card announcement-admin-card">
+        {% if item.images %}
+          <div class="announcement-admin-card__media">
+            <img src="{{ item.images.0.url }}" alt="{{ announcement.title }}">
+            {% if item.image_count > 1 %}
+              <span class="announcement-admin-card__count">{{ item.image_count }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+        <div class="announcement-admin-card__content" data-card-scroll>
+          <div class="ticket-head">
+            <div>
+              <p class="meta">{{ announcement.created_at|date:"d/m/Y H:i" }}</p>
+              <h3>{{ announcement.title }}</h3>
+            </div>
+            <span class="pill {% if announcement.is_published %}pill-done{% else %}pill-closed{% endif %}">
+              {% if announcement.is_published %}Publicado{% else %}Rascunho{% endif %}
+            </span>
+          </div>
+          <div class="announcement-body">{{ announcement.body|safe }}</div>
+          <div class="announcement-admin-card__actions">
+            <a class="primary link-button" href="{% url 'announcement_edit' announcement.pk %}">Editar</a>
+            <form method="post" action="{% url 'announcement_toggle_publish' announcement.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="{% if announcement.is_published %}danger-button{% endif %}">
+                {% if announcement.is_published %}Despublicar{% else %}Publicar{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+      </article>
+      {% endwith %}
+    {% empty %}
+      <div class="card muted">Nenhum comunicado cadastrado.</div>
+    {% endfor %}
+  </div>
+</section>
+<script>
+  (function () {
+    const scrollables = Array.from(document.querySelectorAll("[data-card-scroll]"));
+    const timers = new WeakMap();
+
+    scrollables.forEach((element) => {
+      const revealScrollbar = () => {
+        element.classList.add("is-scrolling");
+        const previous = timers.get(element);
+        if (previous) window.clearTimeout(previous);
+        timers.set(
+          element,
+          window.setTimeout(() => {
+            element.classList.remove("is-scrolling");
+          }, 1000)
+        );
+      };
+
+      element.addEventListener("scroll", revealScrollbar, { passive: true });
+      element.addEventListener("wheel", revealScrollbar, { passive: true });
+      element.addEventListener("touchmove", revealScrollbar, { passive: true });
+    });
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Sistema de Chamados{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="topbar">
+      <a class="brand" href="{% url 'home' %}">
+        <img class="brand__mark" src="{% static 'img/logo.svg' %}" alt="">
+        <span>Sistema de Chamados</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" onclick="document.body.classList.toggle('menu-open')">Menu</button>
+      <nav class="nav">
+        {% if user.is_authenticated %}
+          <a href="{% url 'home' %}">Home</a>
+          <a href="{% url 'dashboard' %}">Painel</a>
+          <a href="{% url 'ticket_list' %}">Chamados</a>
+          <a href="{% url 'ticket_create' %}">Abrir chamado</a>
+          {% if user.is_superuser or user.is_staff %}
+            <a href="{% url 'user_management' %}">Usuarios</a>
+            <a href="{% url 'announcement_management' %}">Anuncios</a>
+          {% endif %}
+          <a href="{% url 'logout' %}">Sair</a>
+        {% else %}
+          <a href="{% url 'login' %}">Entrar</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+      <span>&copy; 2026 Sistema de Chamados</span>
+      <span>produzido por: <a href="https://github.com/oliveira-helio" target="_blank" rel="noreferrer">@Oliveira-Helio</a></span>
+    </footer>
+    {% if messages %}
+      <section class="toast-stack" aria-live="polite" aria-atomic="true">
+        {% for message in messages %}
+          <div class="toast toast-{{ message.tags }}" role="status" data-toast>
+            <span class="toast__text">{{ message }}</span>
+            <button class="toast__close" type="button" aria-label="Fechar notificação" data-toast-close>×</button>
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+  </div>
+  <script>
+    (function () {
+      const toasts = document.querySelectorAll("[data-toast]");
+      toasts.forEach((toast) => {
+        const closeButton = toast.querySelector("[data-toast-close]");
+        const removeToast = () => {
+          toast.classList.add("toast--hide");
+          window.setTimeout(() => toast.remove(), 220);
+        };
+
+        if (closeButton) {
+          closeButton.addEventListener("click", removeToast);
+        }
+
+        window.setTimeout(removeToast, 4200);
+      });
+    })();
+  </script>
+</body>
+</html>
