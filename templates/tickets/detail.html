@@ -66,11 +66,11 @@
       {% else %}
         <div class="history-line">
           <div class="ticket-head">
-            <strong>Historico de status</strong>
+            <strong class="ticket-head">
+              <p>{{ event.message }}</p>
+            </strong>
             <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
           </div>
-          <p>{{ event.message }}</p>
-          <small class="meta">Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
         </div>
       {% endif %}
     {% empty %}

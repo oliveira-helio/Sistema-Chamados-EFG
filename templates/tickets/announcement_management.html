@@ -30,22 +30,24 @@
             {% endif %}
           </div>
         {% endif %}
-        <div class="announcement-admin-card__content" data-card-scroll>
-          <div class="ticket-head">
-            <div>
-              <p class="meta">{{ announcement.created_at|date:"d/m/Y H:i" }}</p>
-              <h3>{{ announcement.title }}</h3>
+        <div class="announcement-admin-card__container">
+          <div class="announcement-admin-card__content" data-card-scroll>
+            <div class="ticket-head">
+              <div>
+                <p class="meta">{{ announcement.created_at|date:"d/m/Y H:i" }}</p>
+                <h3>{{ announcement.title }}</h3>
+              </div>
+              <span class="pill {% if announcement.is_published %}pill-done{% else %}pill-closed{% endif %}">
+                {% if announcement.is_published %}Publicado{% else %}Rascunho{% endif %}
+              </span>
             </div>
-            <span class="pill {% if announcement.is_published %}pill-done{% else %}pill-closed{% endif %}">
-              {% if announcement.is_published %}Publicado{% else %}Rascunho{% endif %}
-            </span>
+            <div class="announcement-body">{{ announcement.body|safe }}</div>
           </div>
-          <div class="announcement-body">{{ announcement.body|safe }}</div>
           <div class="announcement-admin-card__actions">
-            <a class="primary link-button" href="{% url 'announcement_edit' announcement.pk %}">Editar</a>
+            <a class="publish-button" href="{% url 'announcement_edit' announcement.pk %}">Editar</a>
             <form method="post" action="{% url 'announcement_toggle_publish' announcement.pk %}">
               {% csrf_token %}
-              <button type="submit" class="{% if announcement.is_published %}danger-button{% endif %}">
+              <button type="submit" class="{% if announcement.is_published %}danger-button{% else %}publish-button{% endif %}">
                 {% if announcement.is_published %}Despublicar{% else %}Publicar{% endif %}
               </button>
             </form>
