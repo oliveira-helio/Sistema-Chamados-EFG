@@ -9,10 +9,10 @@
     <a class="primary link-button" href="{% url 'ticket_create' %}">Abrir chamado</a>
   </div>
 
-  <form class="filters card" method="get">
+  <form class="card filters" method="get">
     <div class="tabs">
       {% for tab_key, tab_label in tabs %}
-        <a class="tab {% if scope == tab_key %}active{% endif %}" href="?scope={{ tab_key }}{% if status %}&status={{ status }}{% endif %}{% if search %}&q={{ search }}{% endif %}">{{ tab_label }}</a>
+        <a class="tab {% if scope == tab_key %}active{% endif %}" href="?scope={{ tab_key }}{% if status %}&status={{ status }}{% endif %}{% if department %}&department={{ department }}{% endif %}{% if search %}&q={{ search }}{% endif %}">{{ tab_label }}</a>
       {% endfor %}
     </div>
     <div class="filter-grid">
@@ -24,6 +24,26 @@
         <option value="FORWARDED" {% if status == "FORWARDED" %}selected{% endif %}>Encaminhado</option>
         <option value="CLOSED" {% if status == "CLOSED" %}selected{% endif %}>Encerrado</option>
         <option value="DONE" {% if status == "DONE" %}selected{% endif %}>Concluido</option>
+      </select>
+      <select name="department">
+        <option value="">Todos os departamentos</option>
+        <option value="DIRETORIA" {% if department == "DIRETORIA" %}selected{% endif %}>Diretoria</option>
+        <option value="VICE_DIRETORIA" {% if department == "VICE_DIRETORIA" %}selected{% endif %}>Vice-diretoria</option>
+        <option value="TI" {% if department == "TI" %}selected{% endif %}>Tecnologia da Informacao</option>
+        <option value="PSICOLOGIA" {% if department == "PSICOLOGIA" %}selected{% endif %}>Psicologia</option>
+        <option value="SEGURANCA" {% if department == "SEGURANCA" %}selected{% endif %}>Seguranca</option>
+        <option value="ZELADORIA" {% if department == "ZELADORIA" %}selected{% endif %}>Zeladoria</option>
+        <option value="COZINHA" {% if department == "COZINHA" %}selected{% endif %}>Cozinha</option>
+        <option value="MANUTENCAO" {% if department == "MANUTENCAO" %}selected{% endif %}>Manutencao</option>
+        <option value="ESTAGIO" {% if department == "ESTAGIO" %}selected{% endif %}>Estagio</option>
+        <option value="MONITORIA" {% if department == "MONITORIA" %}selected{% endif %}>Monitoria</option>
+        <option value="SECRETARIA" {% if department == "SECRETARIA" %}selected{% endif %}>Secretaria</option>
+        <option value="STAI" {% if department == "STAI" %}selected{% endif %}>Stai</option>
+        <option value="COORDENACAO_PEDAGOGICA" {% if department == "COORDENACAO_PEDAGOGICA" %}selected{% endif %}>Coordenacao pedagogica</option>
+        <option value="COORDENACAO_TECNICA" {% if department == "COORDENACAO_TECNICA" %}selected{% endif %}>Coordenacao tecnica</option>
+        <option value="BIBLIOTECA" {% if department == "BIBLIOTECA" %}selected{% endif %}>Biblioteca</option>
+        <option value="LABORATORIOS" {% if department == "LABORATORIOS" %}selected{% endif %}>Laboratorios</option>
+        <option value="DOCENCIA" {% if department == "DOCENCIA" %}selected{% endif %}>Docencia</option>
       </select>
       <button class="primary" type="submit">Filtrar</button>
     </div>
@@ -44,7 +64,7 @@
           </div>
         </div>
         <h3>{{ ticket.title }}</h3>
-        <p>{{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
+        <p>{{ ticket.get_area_display }} - {{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
         <p class="meta">Prazo: {{ ticket.deadline_label }}</p>
         <small>Solicitante: {{ ticket.requester.full_name }}</small>
       </a>

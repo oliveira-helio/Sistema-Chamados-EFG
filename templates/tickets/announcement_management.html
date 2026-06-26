@@ -58,28 +58,24 @@
     {% endfor %}
   </div>
 </section>
-<script>
-  (function () {
-    const scrollables = Array.from(document.querySelectorAll("[data-card-scroll]"));
-    const timers = new WeakMap();
 
-    scrollables.forEach((element) => {
-      const revealScrollbar = () => {
-        element.classList.add("is-scrolling");
-        const previous = timers.get(element);
-        if (previous) window.clearTimeout(previous);
-        timers.set(
-          element,
-          window.setTimeout(() => {
-            element.classList.remove("is-scrolling");
-          }, 1000)
-        );
-      };
-
-      element.addEventListener("scroll", revealScrollbar, { passive: true });
-      element.addEventListener("wheel", revealScrollbar, { passive: true });
-      element.addEventListener("touchmove", revealScrollbar, { passive: true });
-    });
-  })();
-</script>
+{% if recent_changes %}
+  <section class="section">
+    <div class="section-head">
+      <h2>Historico recente</h2>
+    </div>
+    <div class="stack compact">
+      {% for change in recent_changes %}
+        <div class="history-line">
+          <div class="ticket-head">
+            <strong>{{ change.get_action_display }}</strong>
+            <span class="meta">{{ change.created_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <p>{{ change.after_data.title|default:change.before_data.title }}</p>
+          <small class="meta">Por {{ change.actor.full_name }} - {{ change.actor.get_cargo_display }}</small>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
 {% endblock %}

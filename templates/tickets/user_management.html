@@ -23,15 +23,45 @@
       <article class="card">
         <div class="ticket-head">
           <strong>{{ user.full_name }}</strong>
-          <a href="{% url 'user_edit' user.pk %}">Editar</a>
+          <div class="ticket-head__status">
+            <a href="{% url 'user_edit' user.pk %}">Editar</a>
+            <a href="{% url 'user_change_password' user.pk %}">Alterar senha</a>
+            <form method="post" action="{% url 'user_toggle_active' user.pk %}">
+              {% csrf_token %}
+              {% if user.is_active %}
+                <button type="submit" class="danger-button">Inativar</button>
+              {% else %}
+                <button type="submit" class="primary">Ativar</button>
+              {% endif %}
+            </form>
+          </div>
         </div>
         <p>{{ user.matricula }} | {{ user.email }}</p>
-        <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem area" }} - {{ user.get_cargo_display }}</p>
+        <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem area" }} - {{ user.get_department_display|default:"Sem departamento" }} - {{ user.get_cargo_display }}</p>
       </article>
     {% empty %}
       <div class="card muted">Nenhum usuario encontrado.</div>
     {% endfor %}
   </div>
 </section>
-{% endblock %}
 
+{% if recent_changes %}
+  <section class="section">
+    <div class="section-head">
+      <h2>Historico recente</h2>
+    </div>
+    <div class="stack compact">
+      {% for change in recent_changes %}
+        <div class="history-line">
+          <div class="ticket-head">
+            <strong>{{ change.get_action_display }}</strong>
+            <span class="meta">{{ change.created_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <p>{{ change.before_data.full_name|default:"" }}{% if change.after_data.full_name %} -> {{ change.after_data.full_name }}{% endif %}</p>
+          <small class="meta">Por {{ change.actor.full_name }} - {{ change.actor.get_cargo_display }}</small>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

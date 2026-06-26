@@ -1,11 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout
+from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 import json
+
+from django.utils import timezone
 
 from .forms import (
     AnnouncementForm,
@@ -20,17 +23,22 @@ from .forms import (
 from .models import (
     Announcement,
     AnnouncementImage,
-    CARGO_CHOICES_BY_AREA,
+    CARGO_CHOICES_BY_DEPARTMENT,
+    ChangeLog,
+    area_for_department,
     Ticket,
     TicketAttachment,
     TicketEvent,
     TicketCategory,
+    TICKET_STATUS,
     User,
     user_can_admin,
     user_can_edit_ticket,
     user_can_reopen_ticket,
     user_can_view_ticket,
 )
+from .services import format_ticket_status_message, ticket_status_choices_for
+from .services_audit import serialize_announcement_for_audit, serialize_user_for_audit
 
 
 def _announcement_gallery_payload(announcement):
@@ -41,6 +49,17 @@ def _announcement_gallery_payload(announcement):
         "images_json": json.dumps(images),
         "image_count": len(images),
     }
+
+
+def _log_change(entity_type, entity_id, action, actor, before_data=None, after_data=None):
+    ChangeLog.objects.create(
+        entity_type=entity_type,
+        entity_id=entity_id,
+        action=action,
+        actor=actor,
+        before_data=before_data or {},
+        after_data=after_data or {},
+    )
 
 
 def home(request):
@@ -79,11 +98,12 @@ def ticket_categories_api(request):
 def user_roles_api(request):
     vinculo = request.GET.get("vinculo", "").strip()
     area = request.GET.get("area", "").strip()
+    department = request.GET.get("department", "").strip()
 
     if vinculo == "PROFESSOR":
-        roles = list(CARGO_CHOICES_BY_AREA["DOCENCIA"])
-    elif vinculo == "ADMINISTRATIVO" and area in CARGO_CHOICES_BY_AREA:
-        roles = list(CARGO_CHOICES_BY_AREA[area])
+        roles = [("HORISTA", "Professor Horista"), ("MENSALISTA", "Professor Mensalista")]
+    elif vinculo == "ADMINISTRATIVO" and department:
+        roles = list(CARGO_CHOICES_BY_DEPARTMENT.get(department, []))
     else:
         roles = []
     return JsonResponse({"roles": [{"value": value, "label": label} for value, label in roles]})
@@ -120,6 +140,7 @@ def _visible_tickets_for(user, queryset=None):
 def ticket_list(request):
     scope = request.GET.get("scope", "mine")
     status = request.GET.get("status", "")
+    department = request.GET.get("department", "")
     search = request.GET.get("q", "").strip()
 
     qs = Ticket.objects.select_related("requester", "assigned_to", "category")
@@ -137,6 +158,8 @@ def ticket_list(request):
 
     if status:
         qs = qs.filter(status=status)
+    if department:
+        qs = qs.filter(department=department)
     if search:
         search_q = Q(title__icontains=search) | Q(description__icontains=search)
         if search.isdigit():
@@ -150,7 +173,7 @@ def ticket_list(request):
     if request.user.is_superuser or user_can_admin(request.user):
         tabs.append(("all", "Todos os chamados"))
 
-    return render(request, "tickets/list.html", {"tickets": qs, "tabs": tabs, "scope": scope, "status": status, "search": search})
+    return render(request, "tickets/list.html", {"tickets": qs, "tabs": tabs, "scope": scope, "status": status, "department": department, "search": search})
 
 
 @login_required
@@ -183,42 +206,54 @@ def ticket_detail(request, pk):
             if status_form.is_valid():
                 new_status = status_form.cleaned_data["status"]
                 old_status = ticket.status
-                can_change = user_can_edit_ticket(request.user, ticket)
-                can_reopen = user_can_reopen_ticket(request.user, ticket)
+                target_department = status_form.cleaned_data.get("department") or ticket.department
+                allowed_statuses = {value for value, _label in ticket_status_choices_for(request.user, ticket)}
 
-                if new_status == "CLOSED" and not can_change:
-                    messages.error(request, "Voce nao tem permissao para encerrar este chamado.")
-                elif new_status == "DONE" and not (can_reopen or request.user.is_superuser):
-                    messages.error(request, "Voce nao tem permissao para concluir este chamado.")
-                elif new_status == "OPEN" and old_status == "CLOSED" and not can_reopen:
-                    messages.error(request, "Voce nao tem permissao para reabrir este chamado.")
-                else:
-                    ticket.status = new_status
+                if new_status == old_status:
+                    messages.error(request, "O chamado ja esta neste status.")
+                elif old_status == "DONE":
+                    messages.error(request, "Chamado concluido nao pode receber nova alteracao de status.")
+                elif new_status not in allowed_statuses:
                     if new_status == "CLOSED":
-                        ticket.closed_at = ticket.closed_at or ticket.last_status_change_at
+                        messages.error(request, "Voce nao tem permissao para encerrar este chamado.")
                     elif new_status == "DONE":
-                        ticket.concluded_at = ticket.concluded_at or ticket.last_status_change_at
-                    elif new_status == "OPEN" and old_status == "CLOSED":
-                        ticket.reopened_at = ticket.last_status_change_at
-                        ticket.reopened_count += 1
-                    ticket.save(update_fields=["status", "closed_at", "concluded_at", "reopened_at", "reopened_count", "last_status_change_at"])
-                    TicketEvent.objects.create(
-                        ticket=ticket,
-                        actor=request.user,
-                        kind="STATUS",
-                        message=status_form.cleaned_data["message"] or f"Status alterado de {old_status} para {new_status}.",
-                        from_status=old_status,
-                        to_status=new_status,
-                    )
-                    if old_status == "CLOSED" and new_status == "OPEN":
+                        messages.error(request, "Voce nao tem permissao para concluir este chamado.")
+                    elif new_status == "OPEN":
+                        messages.error(request, "Voce nao tem permissao para reabrir este chamado.")
+                    else:
+                        messages.error(request, "Voce nao tem permissao para alterar este chamado.")
+                elif new_status == "FORWARDED" and not status_form.cleaned_data.get("department"):
+                    messages.error(request, "Selecione o departamento de destino para encaminhar o chamado.")
+                else:
+                    comment_text = status_form.cleaned_data["message"].strip()
+                    if comment_text:
                         TicketEvent.objects.create(
                             ticket=ticket,
                             actor=request.user,
-                            kind="REOPEN",
-                            message=status_form.cleaned_data["message"] or "Chamado reaberto.",
-                            from_status=old_status,
-                            to_status=new_status,
+                            kind="COMMENT",
+                            message=comment_text,
                         )
+
+                    if new_status == "FORWARDED":
+                        ticket.area = area_for_department(target_department)
+                        ticket.department = target_department
+                    ticket.status = new_status
+                    if new_status == "CLOSED":
+                        ticket.closed_at = ticket.closed_at or timezone.now()
+                    elif new_status == "DONE":
+                        ticket.concluded_at = ticket.concluded_at or timezone.now()
+                    elif new_status == "OPEN" and old_status == "CLOSED":
+                        ticket.reopened_at = timezone.now()
+                        ticket.reopened_count += 1
+                    ticket.save(update_fields=["status", "area", "department", "closed_at", "concluded_at", "reopened_at", "reopened_count", "last_status_change_at"])
+                    TicketEvent.objects.create(
+                        ticket=ticket,
+                        actor=request.user,
+                        kind="REOPEN" if old_status == "CLOSED" and new_status == "OPEN" else "STATUS",
+                        message=format_ticket_status_message(ticket, old_status, new_status, request.user),
+                        from_status=old_status,
+                        to_status=new_status,
+                    )
                     messages.success(request, "Status atualizado.")
                     return redirect("ticket_detail", pk=ticket.pk)
 
@@ -253,9 +288,14 @@ def ticket_detail(request, pk):
 
 @login_required
 def ticket_create(request):
-    valid_departments = dict(Ticket._meta.get_field("department").choices)
-    default_department = request.user.area if request.user.area in valid_departments else None
-    form = TicketCreateForm(request.POST or None, request.FILES or None, default_department=default_department)
+    default_area = request.user.area or None
+    default_department = request.user.department or None
+    form = TicketCreateForm(
+        request.POST or None,
+        request.FILES or None,
+        default_area=default_area,
+        default_department=default_department,
+    )
     if request.method == "POST" and form.is_valid():
         ticket = form.save(commit=False)
         ticket.requester = request.user
@@ -291,7 +331,8 @@ def _admin_users_queryset(search=""):
 def user_management(request):
     search = request.GET.get("q", "").strip()
     users = _admin_users_queryset(search)
-    return render(request, "tickets/user_management.html", {"users": users, "search": search})
+    recent_changes = ChangeLog.objects.filter(entity_type="USER").select_related("actor").order_by("-created_at")[:10]
+    return render(request, "tickets/user_management.html", {"users": users, "search": search, "recent_changes": recent_changes})
 
 
 @login_required
@@ -300,6 +341,7 @@ def user_create(request):
     form = UserAdminForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
+        _log_change("USER", user.pk, "CREATE", request.user, after_data=serialize_user_for_audit(user))
         messages.success(request, f"Usuario criado: {user.full_name}")
         return redirect("user_management")
     if request.method == "POST" and not form.is_valid():
@@ -313,14 +355,55 @@ def user_edit(request, pk):
     user = get_object_or_404(User, pk=pk)
     form = UserUpdateForm(request.POST or None, instance=user)
     if request.method == "POST" and form.is_valid():
+        before_data = serialize_user_for_audit(user)
         updated = form.save(commit=False)
         updated.is_staff = updated.cargo in {"TEC_INFORMATICA", "DIRETOR", "VICE_DIRETOR"}
         updated.save()
+        _log_change("USER", updated.pk, "UPDATE", request.user, before_data=before_data, after_data=serialize_user_for_audit(updated))
         messages.success(request, f"Usuario atualizado: {user.full_name}")
         return redirect("user_management")
     if request.method == "POST" and not form.is_valid():
         messages.error(request, "Nao foi possivel atualizar o usuario. Verifique os campos informados.")
     return render(request, "tickets/user_form.html", {"form": form, "title": f"Editar usuario: {user.full_name}"})
+
+
+@login_required
+@user_passes_test(user_can_admin)
+def user_change_password(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    form = SetPasswordForm(user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        _log_change("USER", user.pk, "PASSWORD", request.user, after_data=serialize_user_for_audit(user))
+        messages.success(request, "Senha alterada com sucesso.")
+        return redirect("user_management")
+    if request.method == "POST" and not form.is_valid():
+        messages.error(request, "Nao foi possivel alterar a senha. Verifique os campos informados.")
+    return render(request, "tickets/user_password_form.html", {"form": form, "title": f"Alterar senha: {user.full_name}"})
+
+
+@login_required
+@user_passes_test(user_can_admin)
+def user_toggle_active(request, pk):
+    if request.method != "POST":
+        return redirect("user_management")
+    user = get_object_or_404(User, pk=pk)
+    before_data = serialize_user_for_audit(user)
+    user.is_active = not user.is_active
+    user.save(update_fields=["is_active", "is_staff"])
+    _log_change(
+        "USER",
+        user.pk,
+        "ACTIVATE" if user.is_active else "DEACTIVATE",
+        request.user,
+        before_data=before_data,
+        after_data=serialize_user_for_audit(user),
+    )
+    messages.success(
+        request,
+        f"Usuario {'ativado' if user.is_active else 'inativado'} com sucesso.",
+    )
+    return redirect("user_management")
 
 
 @login_required
@@ -338,6 +421,7 @@ def announcement_create(request):
                 image=uploaded_image,
                 sort_order=index,
             )
+        _log_change("ANNOUNCEMENT", announcement.pk, "CREATE", request.user, after_data=serialize_announcement_for_audit(announcement))
         messages.success(request, "Anuncio publicado.")
         return redirect("home")
     return render(request, "tickets/announcement_create.html", {"form": form})
@@ -355,7 +439,8 @@ def _announcements_queryset(search=""):
 def announcement_management(request):
     search = request.GET.get("q", "").strip()
     announcements = [_announcement_gallery_payload(announcement) for announcement in _announcements_queryset(search)]
-    return render(request, "tickets/announcement_management.html", {"announcements": announcements, "search": search})
+    recent_changes = ChangeLog.objects.filter(entity_type="ANNOUNCEMENT").select_related("actor").order_by("-created_at")[:10]
+    return render(request, "tickets/announcement_management.html", {"announcements": announcements, "search": search, "recent_changes": recent_changes})
 
 
 @login_required
@@ -364,6 +449,7 @@ def announcement_edit(request, pk):
     announcement = get_object_or_404(Announcement, pk=pk)
     form = AnnouncementForm(request.POST or None, request.FILES or None, instance=announcement)
     if request.method == "POST" and form.is_valid():
+        before_data = serialize_announcement_for_audit(announcement)
         form.save()
         uploaded_images = request.FILES.getlist("images")
         start_index = announcement.announcement_images.count()
@@ -373,6 +459,7 @@ def announcement_edit(request, pk):
                 image=uploaded_image,
                 sort_order=start_index + offset,
             )
+        _log_change("ANNOUNCEMENT", announcement.pk, "UPDATE", request.user, before_data=before_data, after_data=serialize_announcement_for_audit(announcement))
         messages.success(request, "Anuncio atualizado.")
         return redirect("announcement_management")
     return render(
@@ -392,8 +479,17 @@ def announcement_toggle_publish(request, pk):
     if request.method != "POST":
         return redirect("announcement_management")
     announcement = get_object_or_404(Announcement, pk=pk)
+    before_data = serialize_announcement_for_audit(announcement)
     announcement.is_published = not announcement.is_published
     announcement.save(update_fields=["is_published"])
+    _log_change(
+        "ANNOUNCEMENT",
+        announcement.pk,
+        "PUBLISH" if announcement.is_published else "UNPUBLISH",
+        request.user,
+        before_data=before_data,
+        after_data=serialize_announcement_for_audit(announcement),
+    )
     messages.success(
         request,
         "Anuncio publicado." if announcement.is_published else "Anuncio despublicado.",
@@ -407,9 +503,11 @@ def announcement_delete(request, pk):
     if request.method != "POST":
         return redirect("announcement_management")
     announcement = get_object_or_404(Announcement, pk=pk)
+    before_data = serialize_announcement_for_audit(announcement)
     announcement.is_published = False
     announcement.save(update_fields=["is_published"])
-    messages.success(request, "Anuncio desativado.")
+    _log_change("ANNOUNCEMENT", announcement.pk, "UNPUBLISH", request.user, before_data=before_data, after_data=serialize_announcement_for_audit(announcement))
+    messages.success(request, "Anuncio despublicado.")
     return redirect("announcement_management")
 
 

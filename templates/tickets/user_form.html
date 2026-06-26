@@ -12,7 +12,7 @@
     {{ form.non_field_errors }}
     {% if form.errors %}
       <div class="alert error">
-        <strong>Não foi possível salvar o usuário.</strong>
+        <strong>Nao foi possivel salvar o usuario.</strong>
         <div>Confira os campos destacados abaixo.</div>
       </div>
     {% endif %}
@@ -26,6 +26,8 @@
     {{ form.vinculo.errors }}
     <label>Area {{ form.area }}</label>
     {{ form.area.errors }}
+    <label>Departamento {{ form.department }}</label>
+    {{ form.department.errors }}
     <label>Cargo {{ form.cargo }}</label>
     {{ form.cargo.errors }}
 
@@ -44,29 +46,87 @@
   (function () {
     const vinculoField = document.getElementById("id_vinculo");
     const areaField = document.getElementById("id_area");
+    const departmentField = document.getElementById("id_department");
     const cargoField = document.getElementById("id_cargo");
-    if (!vinculoField || !areaField || !cargoField) return;
+    if (!vinculoField || !areaField || !departmentField || !cargoField) return;
 
     const endpoint = "{% url 'user_roles_api' %}";
-    const selectedCargo = cargoField.value;
+
     const areaOptions = [
-      { value: "", label: "Selecione a area" },
-      { value: "TI", label: "Tecnologia da Informacao" },
-      { value: "DIRECAO", label: "Direcao" },
-      { value: "VICE_DIRECAO", label: "Vice-Direcao" },
-      { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao Pedagogica" },
-      { value: "COORDENACAO_TECNICA", label: "Coordenacao Tecnica" },
-      { value: "BIBLIOTECA", label: "Biblioteca" },
-      { value: "LABORATORIO_ENSINO", label: "Tecnico de Laboratorio de Ensino" },
-      { value: "STAI", label: "Coordenacao de STAI" },
-      { value: "SECRETARIA_ESCOLAR", label: "Secretaria Escolar" },
-      { value: "PSICOLOGIA_ESCOLAR", label: "Psicologia Escolar" },
-      { value: "DOCENCIA", label: "Docencia" },
+      { value: "DIRETORIA", label: "Diretoria" },
+      { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
+      { value: "SECRETARIA", label: "Secretaria" },
+      { value: "STAI", label: "Stai" },
+      { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
     ];
 
-    function setOptions(roles) {
+    const departmentsByArea = {
+      DIRETORIA: [{ value: "DIRETORIA", label: "Diretoria" }],
+      VICE_DIRETORIA: [
+        { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
+        { value: "TI", label: "Tecnologia da Informacao" },
+        { value: "PSICOLOGIA", label: "Psicologia" },
+        { value: "SEGURANCA", label: "Seguranca" },
+        { value: "ZELADORIA", label: "Zeladoria" },
+        { value: "COZINHA", label: "Cozinha" },
+        { value: "MANUTENCAO", label: "Manutencao" },
+        { value: "ESTAGIO", label: "Estagio" },
+        { value: "MONITORIA", label: "Monitoria" },
+      ],
+      SECRETARIA: [{ value: "SECRETARIA", label: "Secretaria" }],
+      STAI: [{ value: "STAI", label: "Stai" }],
+      COORDENACAO_PEDAGOGICA: [
+        { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
+        { value: "COORDENACAO_TECNICA", label: "Coordenacao tecnica" },
+        { value: "BIBLIOTECA", label: "Biblioteca" },
+        { value: "LABORATORIOS", label: "Laboratorios" },
+        { value: "DOCENCIA", label: "Docencia" },
+      ],
+    };
+
+    function fillSelect(select, options, placeholder, keepValue = true) {
+      const currentValue = keepValue ? select.value : "";
+      select.innerHTML = `<option value="">${placeholder}</option>`;
+      options.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        if (String(item.value) === String(currentValue)) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+    }
+
+    function updateDepartments() {
+      const area = areaField.value;
+      const current = departmentField.value;
+      const departments = area ? departmentsByArea[area] || [] : areaOptions.flatMap((areaItem) => departmentsByArea[areaItem.value] || []);
+      departmentField.innerHTML = '<option value="">Selecione o departamento</option>';
+      departments.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        if (String(item.value) === String(current)) {
+          option.selected = true;
+        }
+        departmentField.appendChild(option);
+      });
+    }
+
+    async function loadRoles() {
+      const vinculo = vinculoField.value;
+      const area = areaField.value;
+      const department = departmentField.value;
+      const selectedCargo = cargoField.value;
+      if (!vinculo) {
+        cargoField.innerHTML = '<option value="">Selecione o cargo</option>';
+        return;
+      }
+      const response = await fetch(`${endpoint}?vinculo=${encodeURIComponent(vinculo)}&area=${encodeURIComponent(area)}&department=${encodeURIComponent(department)}`);
+      const payload = await response.json();
       cargoField.innerHTML = '<option value="">Selecione o cargo</option>';
-      roles.forEach((role) => {
+      (payload.roles || []).forEach((role) => {
         const option = document.createElement("option");
         option.value = role.value;
         option.textContent = role.label;
@@ -77,55 +137,34 @@
       });
     }
 
-    function setAreaOptions(allowDocencia) {
-      const selectedArea = areaField.value;
-      const filtered = allowDocencia ? areaOptions : areaOptions.filter((item) => item.value !== "DOCENCIA");
-      areaField.innerHTML = "";
-      filtered.forEach((area) => {
-        const option = document.createElement("option");
-        option.value = area.value;
-        option.textContent = area.label;
-        if (String(area.value) === String(selectedArea)) {
-          option.selected = true;
-        }
-        areaField.appendChild(option);
-      });
-    }
-
-    async function loadRoles() {
-      const vinculo = vinculoField.value;
-      const area = areaField.value;
-      if (!vinculo) {
-        setOptions([]);
-        return;
+    function syncProfessorState() {
+      if (vinculoField.value === "PROFESSOR") {
+        areaField.value = "COORDENACAO_PEDAGOGICA";
+        areaField.disabled = true;
+        departmentField.innerHTML = '<option value="DOCENCIA">Docencia</option>';
+        departmentField.value = "DOCENCIA";
+        departmentField.disabled = true;
+      } else {
+        areaField.disabled = false;
+        departmentField.disabled = false;
+        updateDepartments();
       }
-      const response = await fetch(`${endpoint}?vinculo=${encodeURIComponent(vinculo)}&area=${encodeURIComponent(area)}`);
-      const payload = await response.json();
-      setOptions(payload.roles || []);
     }
 
     vinculoField.addEventListener("change", () => {
-      if (vinculoField.value === "PROFESSOR") {
-        setAreaOptions(true);
-        areaField.value = "DOCENCIA";
-        areaField.disabled = true;
-      } else {
-        setAreaOptions(false);
-        areaField.disabled = false;
-        if (areaField.value === "DOCENCIA") {
-          areaField.value = "";
-        }
-      }
+      syncProfessorState();
       loadRoles();
     });
 
     areaField.addEventListener("change", () => {
-      if (vinculoField.value === "ADMINISTRATIVO") {
-        loadRoles();
-      }
+      departmentField.value = "";
+      updateDepartments();
+      loadRoles();
     });
 
-    setAreaOptions(vinculoField.value === "PROFESSOR");
+    departmentField.addEventListener("change", loadRoles);
+
+    syncProfessorState();
     loadRoles();
   })();
 </script>

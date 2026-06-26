@@ -5,7 +5,7 @@
     <div>
       <p class="eyebrow">{{ ticket.number }}</p>
       <h1>{{ ticket.title }}</h1>
-      <p>{{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
+      <p>{{ ticket.get_area_display }} - {{ ticket.get_department_display }} - {{ ticket.get_urgency_display }}</p>
       <p class="meta">Prazo: {{ ticket.deadline_label }}{% if ticket.is_overdue %} | Em atraso{% endif %}</p>
     </div>
     <div class="ticket-head__status">
@@ -30,25 +30,19 @@
       <hr>
       <p><strong>Solicitante:</strong> {{ ticket.requester.full_name }}</p>
       <p><strong>Responsavel:</strong> {{ ticket.assigned_to.full_name|default:"Nao definido" }}</p>
+      <p><strong>Area de destino:</strong> {{ ticket.get_area_display }}</p>
+      <p><strong>Departamento de destino:</strong> {{ ticket.get_department_display }}</p>
       <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y H:i" }}</p>
       <p><strong>Prazo:</strong> {{ ticket.deadline_label }}</p>
     </article>
 
     <article class="card">
-      <h2>Status</h2>
+      <h2>Comentario</h2>
       <form method="post" class="form-stack">
         {% csrf_token %}
-        <input type="hidden" name="action" value="status">
-        {{ status_form.status }}
-        {{ status_form.message }}
-        <button class="primary" type="submit">Atualizar status</button>
-      </form>
-      <hr>
-      <form method="post" enctype="multipart/form-data" class="form-stack">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="attachment">
-        {{ attachment_form.file }}
-        <button type="submit">Enviar anexo</button>
+        <input type="hidden" name="action" value="comment">
+        {{ comment_form.message }}
+        <button class="primary" type="submit">Adicionar comentario</button>
       </form>
     </article>
   </div>
@@ -60,14 +54,25 @@
   </div>
   <div class="stack">
     {% for event in ticket.events.all %}
-      <article class="card event-card">
-        <div class="ticket-head">
-          <strong>{{ event.get_kind_display }}</strong>
-          <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
+      {% if event.kind == "COMMENT" %}
+        <article class="card event-card">
+          <div class="ticket-head">
+            <strong>Comentario</strong>
+            <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <p>{{ event.message|linebreaksbr }}</p>
+          <small>Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
+        </article>
+      {% else %}
+        <div class="history-line">
+          <div class="ticket-head">
+            <strong>Historico de status</strong>
+            <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
+          </div>
+          <p>{{ event.message }}</p>
+          <small class="meta">Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
         </div>
-        <p>{{ event.message }}</p>
-        <small>Por {{ event.actor.full_name }}</small>
-      </article>
+      {% endif %}
     {% empty %}
       <div class="card muted">Nenhum registro ainda.</div>
     {% endfor %}
@@ -77,12 +82,14 @@
 <section class="section">
   <div class="grid-2">
     <article class="card">
-      <h2>Comentario</h2>
-      <form method="post" class="form-stack">
+      <h2>Mudanca de status</h2>
+      <form method="post" class="form-stack" id="status-form">
         {% csrf_token %}
-        <input type="hidden" name="action" value="comment">
-        {{ comment_form.message }}
-        <button class="primary" type="submit">Adicionar comentario</button>
+        <input type="hidden" name="action" value="status">
+        {{ status_form.status }}
+        <input type="hidden" name="message" id="status-message-field">
+        <input type="hidden" name="department" id="status-department-field">
+        <button class="primary" type="submit">Atualizar status</button>
       </form>
     </article>
 
@@ -98,4 +105,83 @@
     </article>
   </div>
 </section>
+
+<dialog class="status-modal" id="status-modal">
+  <form method="dialog" class="status-modal__panel" id="status-modal-form">
+    <h3>Motivo da mudanca de status</h3>
+    <p class="meta">Digite o motivo para registrar no historico.</p>
+    <div class="status-modal__field" id="status-modal-department-field" hidden>
+      <label for="id_department">Departamento de destino</label>
+      {{ status_form.department }}
+    </div>
+    <textarea id="status-modal-message" rows="5" placeholder="Escreva o motivo da mudanca"></textarea>
+    <div class="status-modal__actions">
+      <button type="submit" value="cancel">Cancelar</button>
+      <button class="primary" type="submit" value="confirm">Salvar e atualizar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  (function () {
+    const form = document.getElementById("status-form");
+    const modal = document.getElementById("status-modal");
+    const modalForm = document.getElementById("status-modal-form");
+    const modalMessage = document.getElementById("status-modal-message");
+    const hiddenMessage = document.getElementById("status-message-field");
+    const hiddenDepartment = document.getElementById("status-department-field");
+    const statusSelect = document.getElementById("id_status");
+    const modalDepartmentField = document.getElementById("status-modal-department-field");
+    const modalDepartmentSelect = document.getElementById("id_department");
+    if (!form || !modal || !modalForm || !modalMessage || !hiddenMessage || !hiddenDepartment) return;
+
+    let submitting = false;
+
+    const syncDepartmentField = () => {
+      if (!statusSelect || !modalDepartmentField || !modalDepartmentSelect) return;
+      const isForwarded = statusSelect.value === "FORWARDED";
+      modalDepartmentField.hidden = !isForwarded;
+      modalDepartmentSelect.disabled = !isForwarded;
+      hiddenDepartment.value = isForwarded ? modalDepartmentSelect.value : "";
+      if (!isForwarded) {
+        modalDepartmentSelect.value = "";
+      }
+    };
+
+    if (statusSelect) {
+      statusSelect.addEventListener("change", syncDepartmentField);
+      syncDepartmentField();
+    }
+
+    form.addEventListener("submit", (event) => {
+      if (submitting) return;
+      event.preventDefault();
+      syncDepartmentField();
+      modalMessage.value = hiddenMessage.value || "";
+      if (typeof modal.showModal === "function") {
+        modal.showModal();
+      } else {
+        const reason = window.prompt("Motivo da mudanca de status", hiddenMessage.value || "");
+        if (reason === null) return;
+        hiddenMessage.value = reason;
+        submitting = true;
+        form.submit();
+      }
+    });
+
+    modalForm.addEventListener("submit", (event) => {
+      const submitter = event.submitter;
+      if (submitter && submitter.value === "cancel") {
+        modal.close();
+        return;
+      }
+      event.preventDefault();
+      hiddenMessage.value = modalMessage.value.trim();
+      hiddenDepartment.value = modalDepartmentSelect && !modalDepartmentSelect.disabled ? modalDepartmentSelect.value : "";
+      modal.close();
+      submitting = true;
+      form.submit();
+    });
+  })();
+</script>
 {% endblock %}

@@ -7,29 +7,100 @@
       <h1>Abrir demanda</h1>
     </div>
   </div>
-  <form class="card form-stack" method="post" enctype="multipart/form-data">
+  <form class="card form-stack" method="post" enctype="multipart/form-data" data-ticket-form>
     {% csrf_token %}
     {{ form.non_field_errors }}
+    {% if form.errors %}
+      <div class="alert error">
+        <strong>Nao foi possivel salvar o chamado.</strong>
+        <div>Confira os campos informados.</div>
+      </div>
+    {% endif %}
+    <label>Area de destino {{ form.area }}</label>
+    {{ form.area.errors }}
     <label>Departamento de destino {{ form.department }}</label>
+    {{ form.department.errors }}
     <label>Categoria {{ form.category }}</label>
+    {{ form.category.errors }}
     <label>Titulo {{ form.title }}</label>
+    {{ form.title.errors }}
     <label>Descricao {{ form.description }}</label>
+    {{ form.description.errors }}
     <label>Urgencia {{ form.urgency }}</label>
+    {{ form.urgency.errors }}
     <label>Anexo inicial {{ form.initial_attachment }}</label>
     <button class="primary" type="submit">Criar chamado</button>
   </form>
 </section>
 <script>
   (function () {
+    const areaField = document.getElementById("id_area");
     const departmentField = document.getElementById("id_department");
     const categoryField = document.getElementById("id_category");
-    if (!departmentField || !categoryField) return;
+    if (!areaField || !departmentField || !categoryField) return;
 
     const endpoint = "{% url 'ticket_categories_api' %}";
-
     const selectedCategory = categoryField.value;
+    const selectedDepartment = departmentField.value;
 
-    function setOptions(categories) {
+    const departmentsByArea = {
+      DIRETORIA: [{ value: "DIRETORIA", label: "Diretoria" }],
+      VICE_DIRETORIA: [
+        { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
+        { value: "TI", label: "Tecnologia da Informacao" },
+        { value: "PSICOLOGIA", label: "Psicologia" },
+        { value: "SEGURANCA", label: "Seguranca" },
+        { value: "ZELADORIA", label: "Zeladoria" },
+        { value: "COZINHA", label: "Cozinha" },
+        { value: "MANUTENCAO", label: "Manutencao" },
+        { value: "ESTAGIO", label: "Estagio" },
+        { value: "MONITORIA", label: "Monitoria" },
+      ],
+      SECRETARIA: [{ value: "SECRETARIA", label: "Secretaria" }],
+      STAI: [{ value: "STAI", label: "Stai" }],
+      COORDENACAO_PEDAGOGICA: [
+        { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
+        { value: "COORDENACAO_TECNICA", label: "Coordenacao tecnica" },
+        { value: "BIBLIOTECA", label: "Biblioteca" },
+        { value: "LABORATORIOS", label: "Laboratorios" },
+        { value: "DOCENCIA", label: "Docencia" },
+      ],
+    };
+
+    function setDepartmentOptions(area) {
+      const currentDepartment = departmentField.value || selectedDepartment;
+      const choices = area ? departmentsByArea[area] || [] : [
+        { value: "DIRETORIA", label: "Diretoria" },
+        { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
+        { value: "TI", label: "Tecnologia da Informacao" },
+        { value: "PSICOLOGIA", label: "Psicologia" },
+        { value: "SEGURANCA", label: "Seguranca" },
+        { value: "ZELADORIA", label: "Zeladoria" },
+        { value: "COZINHA", label: "Cozinha" },
+        { value: "MANUTENCAO", label: "Manutencao" },
+        { value: "ESTAGIO", label: "Estagio" },
+        { value: "MONITORIA", label: "Monitoria" },
+        { value: "SECRETARIA", label: "Secretaria" },
+        { value: "STAI", label: "Stai" },
+        { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
+        { value: "COORDENACAO_TECNICA", label: "Coordenacao tecnica" },
+        { value: "BIBLIOTECA", label: "Biblioteca" },
+        { value: "LABORATORIOS", label: "Laboratorios" },
+        { value: "DOCENCIA", label: "Docencia" },
+      ];
+      departmentField.innerHTML = '<option value="">Selecione o departamento</option>';
+      choices.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.value;
+        option.textContent = item.label;
+        if (String(item.value) === String(currentDepartment)) {
+          option.selected = true;
+        }
+        departmentField.appendChild(option);
+      });
+    }
+
+    function setCategoryOptions(categories) {
       categoryField.innerHTML = '<option value="">---------</option>';
       categories.forEach((category) => {
         const option = document.createElement("option");
@@ -44,19 +115,27 @@
 
     async function loadCategories(department) {
       if (!department) {
-        setOptions([]);
+        setCategoryOptions([]);
         return;
       }
       const response = await fetch(`${endpoint}?department=${encodeURIComponent(department)}`);
       const payload = await response.json();
-      setOptions(payload.categories || []);
+      setCategoryOptions(payload.categories || []);
     }
+
+    areaField.addEventListener("change", () => {
+      setDepartmentOptions(areaField.value);
+      departmentField.value = "";
+      categoryField.value = "";
+      loadCategories(departmentField.value);
+    });
 
     departmentField.addEventListener("change", (event) => {
       categoryField.value = "";
       loadCategories(event.target.value);
     });
 
+    setDepartmentOptions(areaField.value);
     if (departmentField.value) {
       loadCategories(departmentField.value);
     }
