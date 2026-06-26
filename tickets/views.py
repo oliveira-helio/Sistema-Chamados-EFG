@@ -260,16 +260,24 @@ def ticket_detail(request, pk):
         elif action == "attachment":
             attachment_form = TicketAttachmentForm(request.POST, request.FILES)
             if attachment_form.is_valid():
-                attachment = attachment_form.save(commit=False)
-                attachment.ticket = ticket
-                attachment.uploaded_by = request.user
-                attachment.original_name = attachment.file.name.rsplit("/", 1)[-1]
-                attachment.save()
+                uploaded_files = attachment_form.cleaned_data.get("files", [])
+                if not uploaded_files:
+                    messages.error(request, "Selecione ao menos um anexo para enviar.")
+                    return redirect("ticket_detail", pk=ticket.pk)
+                attachment_names = []
+                for uploaded_file in uploaded_files:
+                    attachment = TicketAttachment.objects.create(
+                        ticket=ticket,
+                        uploaded_by=request.user,
+                        file=uploaded_file,
+                        original_name=uploaded_file.name,
+                    )
+                    attachment_names.append(attachment.original_name)
                 TicketEvent.objects.create(
                     ticket=ticket,
                     actor=request.user,
                     kind="COMMENT",
-                    message=f"Anexo adicionado: {attachment.original_name}",
+                    message=f"Anexos adicionados: {', '.join(attachment_names)}.",
                 )
                 messages.success(request, "Anexo enviado.")
                 return redirect("ticket_detail", pk=ticket.pk)
@@ -300,20 +308,22 @@ def ticket_create(request):
         ticket = form.save(commit=False)
         ticket.requester = request.user
         ticket.save()
+        initial_files = form.cleaned_data.get("initial_attachment") or []
+        attachment_names = []
+        for uploaded_file in initial_files:
+            attachment = TicketAttachment.objects.create(
+                ticket=ticket,
+                uploaded_by=request.user,
+                file=uploaded_file,
+                original_name=uploaded_file.name,
+            )
+            attachment_names.append(attachment.original_name)
         TicketEvent.objects.create(
             ticket=ticket,
             actor=request.user,
             kind="COMMENT",
-            message="Chamado aberto.",
+            message="Chamado aberto." if not attachment_names else f"Chamado aberto com anexos iniciais: {', '.join(attachment_names)}.",
         )
-        initial_attachment = form.cleaned_data.get("initial_attachment")
-        if initial_attachment:
-            TicketAttachment.objects.create(
-                ticket=ticket,
-                uploaded_by=request.user,
-                file=initial_attachment,
-                original_name=initial_attachment.name,
-            )
         messages.success(request, "Chamado criado com sucesso.")
         return redirect("ticket_detail", pk=ticket.pk)
     return render(request, "tickets/create.html", {"form": form})

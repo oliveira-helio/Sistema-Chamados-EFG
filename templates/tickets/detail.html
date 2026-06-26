@@ -66,11 +66,11 @@
       {% else %}
         <div class="history-line">
           <div class="ticket-head">
-            <strong class="ticket-head">
-              <p>{{ event.message }}</p>
-            </strong>
+            <strong>Historico de status</strong>
             <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
           </div>
+          <p>{{ event.message }}</p>
+          <small class="meta">Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
         </div>
       {% endif %}
     {% empty %}
@@ -102,6 +102,13 @@
           <div class="muted">Nenhum anexo enviado.</div>
         {% endfor %}
       </div>
+      <hr>
+      <form method="post" enctype="multipart/form-data" class="form-stack">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="attachment">
+        <label>Adicionar anexos {{ attachment_form.files }}</label>
+        <button class="primary" type="submit">Enviar anexos</button>
+      </form>
     </article>
   </div>
 </section>

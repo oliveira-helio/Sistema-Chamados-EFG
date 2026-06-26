@@ -8,7 +8,6 @@ from .models import (
     DEPARTMENTS_BY_AREA,
     Announcement,
     Ticket,
-    TicketAttachment,
     TicketCategory,
     TicketEvent,
     User,
@@ -36,6 +35,30 @@ def admin_area_choices():
 
 def department_choices_for_area(area):
     return [("", "Selecione o departamento")] + list(DEPARTMENTS_BY_AREA.get(area, []))
+
+
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    widget = MultipleFileInput
+
+    def clean(self, data, initial=None):
+        if data in (None, "", []):
+            return []
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+        cleaned = []
+        errors = []
+        for item in data:
+            try:
+                cleaned.append(super().clean(item, initial))
+            except forms.ValidationError as exc:
+                errors.extend(exc.error_list)
+        if errors:
+            raise forms.ValidationError(errors)
+        return cleaned
 
 
 class UserCreateForm(UserCreationForm):
@@ -207,7 +230,7 @@ class UserUpdateForm(forms.ModelForm):
 
 
 class TicketCreateForm(forms.ModelForm):
-    initial_attachment = forms.FileField(required=False, label="Anexo inicial")
+    initial_attachment = MultipleFileField(required=False, label="Anexos iniciais")
 
     class Meta:
         model = Ticket
@@ -271,10 +294,8 @@ class TicketStatusForm(forms.Form):
         return cleaned
 
 
-class TicketAttachmentForm(forms.ModelForm):
-    class Meta:
-        model = TicketAttachment
-        fields = ["file"]
+class TicketAttachmentForm(forms.Form):
+    files = MultipleFileField(required=False, label="Anexos")
 
 
 class AnnouncementForm(forms.ModelForm):
