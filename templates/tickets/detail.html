@@ -24,25 +24,23 @@
   {% endif %}
 
   <div class="grid-2">
-    <article class="card">
-      <h2>Descricao</h2>
-      <p>{{ ticket.description|linebreaksbr }}</p>
-      <hr>
+    <article class="card" id="description">
+      <p><strong>Chamado:</strong> {{ ticket.number }}</p>
       <p><strong>Solicitante:</strong> {{ ticket.requester.full_name }}</p>
-      <p><strong>Responsavel:</strong> {{ ticket.assigned_to.full_name|default:"Nao definido" }}</p>
+      <p><strong>Responsavel:</strong> {{ ticket.assigned_to.full_name|default:"Não definido" }}</p>
       <p><strong>Area de destino:</strong> {{ ticket.get_area_display }}</p>
       <p><strong>Departamento de destino:</strong> {{ ticket.get_department_display }}</p>
-      <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y H:i" }}</p>
+      <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y - H:i" }}</p>
       <p><strong>Prazo:</strong> {{ ticket.deadline_label }}</p>
     </article>
 
     <article class="card">
-      <h2>Comentario</h2>
+      <h2 style="justify-self: center;">Adicionar novo comentário</h2>
       <form method="post" class="form-stack">
         {% csrf_token %}
         <input type="hidden" name="action" value="comment">
         {{ comment_form.message }}
-        <button class="primary" type="submit">Adicionar comentario</button>
+        <button class="primary" type="submit">Adicionar comentário</button>
       </form>
     </article>
   </div>
@@ -53,6 +51,15 @@
     <h2>Historico</h2>
   </div>
   <div class="stack">
+    <article class="card event-card">
+      <div class="ticket-head">
+        <strong>Descricao</strong>
+        <span class="meta">{{ ticket.opened_at|date:"d/m/Y H:i" }}</span>
+      </div>
+      <p>{{ ticket.description|linebreaksbr }}</p>
+      <small>Por {{ ticket.requester.full_name }} - {{ ticket.requester.get_cargo_display }}</small>
+    </article>
+
     {% for event in ticket.events.all %}
       {% if event.kind == "COMMENT" %}
         <article class="card event-card">
@@ -64,13 +71,8 @@
           <small>Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
         </article>
       {% else %}
-        <div class="history-line">
-          <div class="ticket-head">
-            <strong>Historico de status</strong>
-            <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
-          </div>
-          <p>{{ event.message }}</p>
-          <small class="meta">Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
+        <div>
+          <p class="history-line"><span class="history-text">{{ event.message }}</span><span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span></p>
         </div>
       {% endif %}
     {% empty %}
@@ -97,7 +99,11 @@
       <h2>Anexos</h2>
       <div class="stack compact">
         {% for attachment in ticket.attachments.all %}
-          <a class="attachment" href="{{ attachment.file.url }}" target="_blank" rel="noreferrer">{{ attachment.original_name }}</a>
+          <div class="attachment-container">
+            <div style="overflow: hidden;">
+              <a class="attachment" href="{{ attachment.file.url }}" target="_blank" rel="noreferrer">{{ attachment.original_name }}</a>
+            </div>
+          </div>
         {% empty %}
           <div class="muted">Nenhum anexo enviado.</div>
         {% endfor %}

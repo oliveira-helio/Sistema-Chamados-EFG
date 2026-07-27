@@ -1,25 +1,31 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <section class="hero hero-wide">
   <div class="hero-copy">
     <div>
       <p class="eyebrow">Rede interna</p>
       <h1>Gestao de chamados para a escola.</h1>
     </div>
-    <p>Fluxo simples, acesso pelo navegador e anexos salvos localmente no Docker.</p>
+    <p>
+      Fluxo simples, acesso pelo navegador e anexos salvos localmente no Docker.
+    </p>
     <div class="hero-actions">
       {% if user.is_authenticated %}
-        <div class="ticket-counter">
-          <strong>{{ open_tickets_count_display }}</strong>
-          <span>Você possui {{ open_tickets_count_display }} chamados em aberto.</span>
-        </div>
-        <a class="primary link-button" href="{% url 'ticket_list' %}">Ver chamados</a>
+      <div class="ticket-counter">
+        <strong>{{ open_tickets_count_display }}</strong>
+        <span
+          >Você possui {{ open_tickets_count_display }} chamados em
+          aberto.</span
+        >
+      </div>
+      <a class="primary link-button" href="{% url 'ticket_list' %}"
+        >Ver chamados</a
+      >
       {% else %}
-        <a class="primary link-button" href="{% url 'login' %}">Entrar</a>
+      <a class="primary link-button" href="{% url 'login' %}">Entrar</a>
       {% endif %}
     </div>
   </div>
-  <div class="panel">
+  <!-- <div class="panel">
     <h2>O que esta pronto nesta base</h2>
     <ul class="feature-list">
       <li>Login por matricula ou e-mail</li>
@@ -27,7 +33,7 @@
       <li>Chamados com comentarios e anexos</li>
       <li>Interface responsiva para celular</li>
     </ul>
-  </div>
+  </div> -->
 </section>
 
 <section class="section">
@@ -35,242 +41,299 @@
     <h2>Comunicados</h2>
   </div>
   <div class="stack">
-    {% for item in announcements %}
-      {% with announcement=item.announcement %}
-      <article class="card announcement-card">
-        {% if item.images %}
-          <div class="announcement-card__media">
-            <button
-              class="announcement-card__image-button"
-              type="button"
-              data-announcement-images="announcement-images-{{ announcement.pk }}"
-              aria-label="Abrir imagens do comunicado {{ announcement.title }}"
-            >
-              <img src="{{ item.images.0.url }}" alt="{{ announcement.title }}">
-              {% if item.image_count > 1 %}
-                <span class="announcement-card__count">{{ item.image_count }}</span>
-              {% endif %}
-            </button>
-            <script type="application/json" id="announcement-images-{{ announcement.pk }}">
-              {{ item.images_json|safe }}
-            </script>
-          </div>
-        {% endif %}
-        <div class="announcement-card__content" data-card-scroll>
-          <p class="meta">{{ announcement.created_at|date:"d/m/Y H:i" }}</p>
-          <h3>{{ announcement.title }}</h3>
-          <div class="announcement-body">{{ announcement.body|safe }}</div>
-        </div>
-      </article>
-      {% endwith %}
-    {% empty %}
-      <div class="card muted">Ainda nao ha comunicados publicados.</div>
+    {% for item in announcements %} {% with announcement=item.announcement %}
+    <article class="card announcement-card">
+      {% if item.images %}
+      <div class="announcement-card__media">
+        <button
+          class="announcement-card__image-button"
+          type="button"
+          data-announcement-images="announcement-images-{{ announcement.pk }}"
+          aria-label="Abrir imagens do comunicado {{ announcement.title }}"
+        >
+          <img src="{{ item.images.0.url }}" alt="{{ announcement.title }}" />
+          {% if item.image_count > 1 %}
+          <span class="announcement-card__count">{{ item.image_count }}</span>
+          {% endif %}
+        </button>
+        <script
+          type="application/json"
+          id="announcement-images-{{ announcement.pk }}"
+        >
+          {{ item.images_json|safe }}
+        </script>
+      </div>
+      {% endif %}
+      <div class="announcement-card__content" data-card-scroll>
+        <p class="meta">{{ announcement.created_at|date:"d/m/Y H:i" }}</p>
+        <h3>{{ announcement.title }}</h3>
+        <div class="announcement-body">{{ announcement.body|safe }}</div>
+      </div>
+    </article>
+    {% endwith %} {% empty %}
+    <div class="card muted">Ainda nao ha comunicados publicados.</div>
     {% endfor %}
   </div>
 </section>
 
 <div class="image-modal" id="announcementImageModal" aria-hidden="true">
   <div class="image-modal__backdrop" data-modal-close></div>
-  <div class="image-modal__dialog" role="dialog" aria-modal="true" aria-label="Imagem do comunicado">
-    <button class="image-modal__close" type="button" data-modal-close aria-label="Fechar imagem">×</button>
-    <button class="image-modal__nav image-modal__nav--prev" type="button" data-modal-prev aria-label="Imagem anterior">‹</button>
-    <button class="image-modal__nav image-modal__nav--next" type="button" data-modal-next aria-label="Próxima imagem">›</button>
+  <div
+    class="image-modal__dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Imagem do comunicado"
+  >
+    <button
+      class="image-modal__close"
+      type="button"
+      data-modal-close
+      aria-label="Fechar imagem"
+    >
+      ×
+    </button>
+    <button
+      class="image-modal__nav image-modal__nav--prev"
+      type="button"
+      data-modal-prev
+      aria-label="Imagem anterior"
+    >
+      ‹
+    </button>
+    <button
+      class="image-modal__nav image-modal__nav--next"
+      type="button"
+      data-modal-next
+      aria-label="Próxima imagem"
+    >
+      ›
+    </button>
     <div class="image-modal__scroller" data-modal-scroller>
-      <img class="image-modal__image" id="announcementImageModalImage" alt="">
+      <img class="image-modal__image" id="announcementImageModalImage" alt="" />
     </div>
     <div class="image-modal__footer">
-      <div class="image-modal__dots" id="announcementImageDots" aria-label="Navegação entre imagens"></div>
+      <div
+        class="image-modal__dots"
+        id="announcementImageDots"
+        aria-label="Navegação entre imagens"
+      ></div>
       <div class="image-modal__counter" id="announcementImageCounter"></div>
     </div>
   </div>
 </div>
 
 <script>
-  (function () {
-    const modal = document.getElementById("announcementImageModal");
-    const modalImage = document.getElementById("announcementImageModalImage");
-    const scroller = modal?.querySelector("[data-modal-scroller]");
-    const triggers = Array.from(document.querySelectorAll(".announcement-card__image-button"));
-    const prevButton = modal?.querySelector("[data-modal-prev]");
-    const nextButton = modal?.querySelector("[data-modal-next]");
-    const dotsContainer = document.getElementById("announcementImageDots");
-    const counter = document.getElementById("announcementImageCounter");
-    const closeTargets = modal?.querySelectorAll("[data-modal-close]") || [];
-    const body = document.body;
-    if (!modal || !modalImage || !scroller || !triggers.length || !dotsContainer || !counter || !prevButton || !nextButton) return;
+  ;(function () {
+    const modal = document.getElementById('announcementImageModal')
+    const modalImage = document.getElementById('announcementImageModalImage')
+    const scroller = modal?.querySelector('[data-modal-scroller]')
+    const triggers = Array.from(
+      document.querySelectorAll('.announcement-card__image-button')
+    )
+    const prevButton = modal?.querySelector('[data-modal-prev]')
+    const nextButton = modal?.querySelector('[data-modal-next]')
+    const dotsContainer = document.getElementById('announcementImageDots')
+    const counter = document.getElementById('announcementImageCounter')
+    const closeTargets = modal?.querySelectorAll('[data-modal-close]') || []
+    const body = document.body
+    if (
+      !modal ||
+      !modalImage ||
+      !scroller ||
+      !triggers.length ||
+      !dotsContainer ||
+      !counter ||
+      !prevButton ||
+      !nextButton
+    )
+      return
 
-    let scrollTimer = null;
-    let currentIndex = 0;
-    let currentItems = [];
-    const cardScrollers = Array.from(document.querySelectorAll("[data-card-scroll]"));
-    const cardTimers = new WeakMap();
+    let scrollTimer = null
+    let currentIndex = 0
+    let currentItems = []
+    const cardScrollers = Array.from(
+      document.querySelectorAll('[data-card-scroll]')
+    )
+    const cardTimers = new WeakMap()
 
     function showScrollbarTemporarily() {
-      scroller.classList.add("is-scrolling");
-      window.clearTimeout(scrollTimer);
+      scroller.classList.add('is-scrolling')
+      window.clearTimeout(scrollTimer)
       scrollTimer = window.setTimeout(() => {
-        scroller.classList.remove("is-scrolling");
-      }, 1000);
+        scroller.classList.remove('is-scrolling')
+      }, 1000)
     }
 
     function wireScrollableElement(element) {
       function revealScrollbar() {
-        element.classList.add("is-scrolling");
-        const previous = cardTimers.get(element);
+        element.classList.add('is-scrolling')
+        const previous = cardTimers.get(element)
         if (previous) {
-          window.clearTimeout(previous);
+          window.clearTimeout(previous)
         }
         const timer = window.setTimeout(() => {
-          element.classList.remove("is-scrolling");
-        }, 1000);
-        cardTimers.set(element, timer);
+          element.classList.remove('is-scrolling')
+        }, 1000)
+        cardTimers.set(element, timer)
       }
 
-      element.addEventListener("scroll", revealScrollbar, { passive: true });
-      element.addEventListener("wheel", revealScrollbar, { passive: true });
-      element.addEventListener("touchmove", revealScrollbar, { passive: true });
+      element.addEventListener('scroll', revealScrollbar, { passive: true })
+      element.addEventListener('wheel', revealScrollbar, { passive: true })
+      element.addEventListener('touchmove', revealScrollbar, { passive: true })
     }
 
     function getDotTargets(total) {
       if (total <= 5) {
-        return Array.from({ length: total }, (_, index) => index);
+        return Array.from({ length: total }, (_, index) => index)
       }
-      return [0, 1, 2, 3, total - 1];
+      return [0, 1, 2, 3, total - 1]
     }
 
     function getActiveDotIndex(index, total) {
-      if (total <= 5) return index;
-      if (index <= 2) return index;
-      if (index >= total - 1) return 4;
-      return 3;
+      if (total <= 5) return index
+      if (index <= 2) return index
+      if (index >= total - 1) return 4
+      return 3
     }
 
     function getDotLabel(targetIndex, total) {
-      if (total <= 5) return `Imagem ${targetIndex + 1}`;
-      if (targetIndex === 3) return "Imagens 4 até a penúltima";
-      if (targetIndex === total - 1) return `Imagem ${total}`;
-      return `Imagem ${targetIndex + 1}`;
+      if (total <= 5) return `Imagem ${targetIndex + 1}`
+      if (targetIndex === 3) return 'Imagens 4 até a penúltima'
+      if (targetIndex === total - 1) return `Imagem ${total}`
+      return `Imagem ${targetIndex + 1}`
     }
 
     function renderDots() {
-      const total = currentItems.length;
+      const total = currentItems.length
       if (!total) {
-        dotsContainer.innerHTML = "";
-        return;
+        dotsContainer.innerHTML = ''
+        return
       }
-      const targets = getDotTargets(total);
-      const activeDot = getActiveDotIndex(currentIndex, total);
-      dotsContainer.innerHTML = "";
+      const targets = getDotTargets(total)
+      const activeDot = getActiveDotIndex(currentIndex, total)
+      dotsContainer.innerHTML = ''
 
       targets.forEach((targetIndex, visualIndex) => {
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.className = "image-modal__dot" + (visualIndex === activeDot ? " is-active" : "");
-        dot.dataset.targetIndex = String(targetIndex);
-        dot.setAttribute("aria-label", getDotLabel(targetIndex, total));
-        dot.addEventListener("click", () => {
-          currentIndex = targetIndex;
-          renderCurrentImage();
-        });
-        dotsContainer.appendChild(dot);
-      });
+        const dot = document.createElement('button')
+        dot.type = 'button'
+        dot.className =
+          'image-modal__dot' + (visualIndex === activeDot ? ' is-active' : '')
+        dot.dataset.targetIndex = String(targetIndex)
+        dot.setAttribute('aria-label', getDotLabel(targetIndex, total))
+        dot.addEventListener('click', () => {
+          currentIndex = targetIndex
+          renderCurrentImage()
+        })
+        dotsContainer.appendChild(dot)
+      })
     }
 
     function renderNav() {
-      const total = currentItems.length;
-      prevButton.disabled = total <= 1 || currentIndex === 0;
-      nextButton.disabled = total <= 1 || currentIndex === total - 1;
-      prevButton.classList.toggle("is-disabled", prevButton.disabled);
-      nextButton.classList.toggle("is-disabled", nextButton.disabled);
-      counter.textContent = total ? `${currentIndex + 1} / ${total}` : "";
+      const total = currentItems.length
+      prevButton.disabled = total <= 1 || currentIndex === 0
+      nextButton.disabled = total <= 1 || currentIndex === total - 1
+      prevButton.classList.toggle('is-disabled', prevButton.disabled)
+      nextButton.classList.toggle('is-disabled', nextButton.disabled)
+      counter.textContent = total ? `${currentIndex + 1} / ${total}` : ''
     }
 
     function renderCurrentImage() {
-      const item = currentItems[currentIndex];
-      if (!item) return;
-      modalImage.src = item.src || item.url || "";
-      modalImage.alt = item.alt || "";
-      scroller.scrollTop = 0;
-      scroller.scrollLeft = 0;
-      renderDots();
-      renderNav();
+      const item = currentItems[currentIndex]
+      if (!item) return
+      modalImage.src = item.src || item.url || ''
+      modalImage.alt = item.alt || ''
+      scroller.scrollTop = 0
+      scroller.scrollLeft = 0
+      renderDots()
+      renderNav()
     }
 
     function openModal(items, index = 0) {
-      currentItems = items;
-      currentIndex = Math.max(0, Math.min(index, currentItems.length - 1));
-      renderCurrentImage();
-      modal.classList.add("is-open");
-      body.classList.add("modal-open");
-      modal.setAttribute("aria-hidden", "false");
-      window.requestAnimationFrame(() => scroller.classList.remove("is-scrolling"));
+      currentItems = items
+      currentIndex = Math.max(0, Math.min(index, currentItems.length - 1))
+      renderCurrentImage()
+      modal.classList.add('is-open')
+      body.classList.add('modal-open')
+      modal.setAttribute('aria-hidden', 'false')
+      window.requestAnimationFrame(() =>
+        scroller.classList.remove('is-scrolling')
+      )
     }
 
     function closeModal() {
-      modal.classList.remove("is-open");
-      body.classList.remove("modal-open");
-      modal.setAttribute("aria-hidden", "true");
-      modalImage.removeAttribute("src");
-      modalImage.alt = "";
-      scroller.classList.remove("is-scrolling");
-      window.clearTimeout(scrollTimer);
-      currentItems = [];
-      currentIndex = 0;
+      modal.classList.remove('is-open')
+      body.classList.remove('modal-open')
+      modal.setAttribute('aria-hidden', 'true')
+      modalImage.removeAttribute('src')
+      modalImage.alt = ''
+      scroller.classList.remove('is-scrolling')
+      window.clearTimeout(scrollTimer)
+      currentItems = []
+      currentIndex = 0
     }
 
     triggers.forEach((trigger) => {
-      trigger.addEventListener("click", () => {
-        const sourceId = trigger.dataset.announcementImages;
-        const source = sourceId ? document.getElementById(sourceId) : null;
-        const raw = source?.textContent || "[]";
-        let items = [];
+      trigger.addEventListener('click', () => {
+        const sourceId = trigger.dataset.announcementImages
+        const source = sourceId ? document.getElementById(sourceId) : null
+        const raw = source?.textContent || '[]'
+        let items = []
         try {
-          items = JSON.parse(raw);
+          items = JSON.parse(raw)
         } catch (error) {
-          items = [];
+          items = []
         }
-        if (!items.length) return;
-        openModal(items, 0);
-      });
-    });
+        if (!items.length) return
+        openModal(items, 0)
+      })
+    })
 
-    prevButton.addEventListener("click", () => {
+    prevButton.addEventListener('click', () => {
       if (currentIndex > 0 && currentItems.length) {
-        currentIndex -= 1;
-        renderCurrentImage();
+        currentIndex -= 1
+        renderCurrentImage()
       }
-    });
+    })
 
-    nextButton.addEventListener("click", () => {
+    nextButton.addEventListener('click', () => {
       if (currentIndex < currentItems.length - 1) {
-        currentIndex += 1;
-        renderCurrentImage();
+        currentIndex += 1
+        renderCurrentImage()
       }
-    });
+    })
 
     closeTargets.forEach((target) => {
-      target.addEventListener("click", closeModal);
-    });
+      target.addEventListener('click', closeModal)
+    })
 
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && modal.classList.contains("is-open")) {
-        closeModal();
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+        closeModal()
       }
-      if (!modal.classList.contains("is-open")) return;
-      if (event.key === "ArrowLeft" && currentIndex > 0) {
-        currentIndex -= 1;
-        renderCurrentImage();
+      if (!modal.classList.contains('is-open')) return
+      if (event.key === 'ArrowLeft' && currentIndex > 0) {
+        currentIndex -= 1
+        renderCurrentImage()
       }
-      if (event.key === "ArrowRight" && currentIndex < currentItems.length - 1) {
-        currentIndex += 1;
-        renderCurrentImage();
+      if (
+        event.key === 'ArrowRight' &&
+        currentIndex < currentItems.length - 1
+      ) {
+        currentIndex += 1
+        renderCurrentImage()
       }
-    });
+    })
 
-    scroller.addEventListener("scroll", showScrollbarTemporarily, { passive: true });
-    scroller.addEventListener("wheel", showScrollbarTemporarily, { passive: true });
-    scroller.addEventListener("touchmove", showScrollbarTemporarily, { passive: true });
-    cardScrollers.forEach(wireScrollableElement);
-  })();
+    scroller.addEventListener('scroll', showScrollbarTemporarily, {
+      passive: true,
+    })
+    scroller.addEventListener('wheel', showScrollbarTemporarily, {
+      passive: true,
+    })
+    scroller.addEventListener('touchmove', showScrollbarTemporarily, {
+      passive: true,
+    })
+    cardScrollers.forEach(wireScrollableElement)
+  })()
 </script>
 {% endblock %}
