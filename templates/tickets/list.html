@@ -10,6 +10,7 @@
   </div>
 
   <form class="card filters" method="get">
+    <input type="hidden" name="scope" value="{{ scope }}">
     <div class="tabs">
       {% for tab_key, tab_label in tabs %}
         <a class="tab {% if scope == tab_key %}active{% endif %}" href="?scope={{ tab_key }}{% if status %}&status={{ status }}{% endif %}{% if department %}&department={{ department }}{% endif %}{% if search %}&q={{ search }}{% endif %}">{{ tab_label }}</a>

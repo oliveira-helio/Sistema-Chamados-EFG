@@ -495,16 +495,50 @@ def user_can_admin(user):
     return bool(user and user.is_authenticated and (user.is_superuser or getattr(user, "cargo", None) in ADMIN_CARGOS))
 
 
+def managed_departments_for_user(user):
+    if not user or not user.is_authenticated or not getattr(user, "is_active", True):
+        return set()
+    if user.is_superuser or user_can_admin(user):
+        return {code for code, _label in DEPARTMENT_CHOICES}
+    if user.cargo in {"DIRETOR", "VICE_DIRETOR"}:
+        return {code for code, _label in DEPARTMENT_CHOICES}
+    if user.cargo == "COORD_PEDAGOGICO":
+        return {"COORDENACAO_PEDAGOGICA", "COORDENACAO_TECNICA", "DOCENCIA", "LABORATORIOS"}
+    if user.cargo == "COORD_TECNICO":
+        return {"COORDENACAO_PEDAGOGICA", "COORDENACAO_TECNICA", "DOCENCIA", "LABORATORIOS"}
+    if user.cargo == "BIBLIOTECARIO":
+        return {"BIBLIOTECA"}
+    if user.cargo == "SECRETARIO":
+        return {"SECRETARIA"}
+    if user.cargo == "COORD_STAI":
+        return {"STAI"}
+    return set()
+
+
+def ticket_current_department(ticket):
+    if ticket.assigned_to_id and ticket.assigned_to and ticket.assigned_to.department:
+        return ticket.assigned_to.department
+    return ticket.department
+
+
+def user_can_manage_ticket_responsible(user, ticket):
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_superuser or user_can_admin(user):
+        return True
+    return ticket_current_department(ticket) in managed_departments_for_user(user)
+
+
 def user_can_view_ticket(user, ticket):
     if not user or not user.is_authenticated:
         return False
     if user.is_superuser or user_can_admin(user):
         return True
+    managed_departments = managed_departments_for_user(user)
     return (
         ticket.requester_id == user.id
         or ticket.assigned_to_id == user.id
-        or ticket.area == user.area
-        or ticket.department == user.department
+        or ticket_current_department(ticket) in managed_departments
     )
 
 

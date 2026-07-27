@@ -6,7 +6,13 @@ from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
 
-from .models import Ticket, TicketEvent, user_can_admin
+from .models import (
+    Ticket,
+    TicketEvent,
+    managed_departments_for_user,
+    user_can_admin,
+    user_can_manage_ticket_responsible,
+)
 
 
 SYSTEM_USER_MATRICULA = "SISTEMA"
@@ -61,18 +67,20 @@ def ticket_status_choices_for(user, ticket):
 
     if ticket.status == "CLOSED":
         if is_requester or can_admin or can_assigned:
-            return [
+            choices = [
                 ("OPEN", "Reabrir chamado"),
                 ("DONE", "Concluir chamado"),
             ]
+            return [choice for choice in choices if choice[0] != ticket.status]
         return []
 
     if can_admin or can_assigned:
-        return [
+        choices = [
             ("IN_PROGRESS", "Em tratativa"),
             ("FORWARDED", "Encaminhado"),
             ("CLOSED", "Encerrar"),
         ]
+        return [choice for choice in choices if choice[0] != ticket.status]
 
     return []
 
@@ -133,6 +141,18 @@ def format_responsible_change_message(ticket, old_responsible, new_responsible, 
         old_label = f"{old_responsible.full_name} - {old_responsible.get_cargo_display()}"
     new_label = f"{new_responsible.full_name} - {new_responsible.get_cargo_display()}"
     return f"Responsavel alterado de {old_label} para {new_label} por {actor_label}."
+
+
+def assignable_users_for(user, ticket):
+    User = get_user_model()
+    if not user_can_manage_ticket_responsible(user, ticket):
+        return User.objects.none()
+
+    departments = managed_departments_for_user(user)
+    qs = User.objects.filter(is_active=True, department__in=departments).order_by("full_name", "matricula")
+    if getattr(user, "cargo", "") == "COORD_TECNICO":
+        qs = qs.exclude(cargo="COORD_PEDAGOGICO")
+    return qs
 
 
 def close_overdue_tickets():

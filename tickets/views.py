@@ -16,6 +16,7 @@ from .forms import (
     UserAdminForm,
     UserUpdateForm,
     TicketAttachmentForm,
+    TicketAssignmentForm,
     TicketCreateForm,
     TicketEventForm,
     TicketStatusForm,
@@ -30,14 +31,13 @@ from .models import (
     TicketAttachment,
     TicketEvent,
     TicketCategory,
-    TICKET_STATUS,
     User,
+    managed_departments_for_user,
+    user_can_manage_ticket_responsible,
     user_can_admin,
-    user_can_edit_ticket,
-    user_can_reopen_ticket,
     user_can_view_ticket,
 )
-from .services import format_ticket_status_message, ticket_status_choices_for
+from .services import assignable_users_for, format_responsible_change_message, format_ticket_status_message, ticket_status_choices_for
 from .services_audit import serialize_announcement_for_audit, serialize_user_for_audit
 
 
@@ -133,7 +133,11 @@ def _visible_tickets_for(user, queryset=None):
     qs = queryset or Ticket.objects.select_related("requester", "assigned_to", "category")
     if user.is_superuser or user_can_admin(user):
         return qs
-    return qs.filter(Q(requester=user) | Q(assigned_to=user) | Q(department=user.area))
+    managed_departments = managed_departments_for_user(user)
+    visibility_q = Q(requester=user) | Q(assigned_to=user)
+    if managed_departments:
+        visibility_q |= Q(assigned_to__department__in=managed_departments) | Q(assigned_to__isnull=True, department__in=managed_departments)
+    return qs.filter(visibility_q)
 
 
 @login_required
@@ -142,13 +146,17 @@ def ticket_list(request):
     status = request.GET.get("status", "")
     department = request.GET.get("department", "")
     search = request.GET.get("q", "").strip()
+    managed_departments = managed_departments_for_user(request.user)
+    can_see_all = bool(request.user.is_superuser or user_can_admin(request.user) or managed_departments)
+    if scope == "all" and not can_see_all:
+        scope = "mine"
 
     qs = Ticket.objects.select_related("requester", "assigned_to", "category")
     if not (request.user.is_superuser or user_can_admin(request.user)):
         if scope == "assigned":
             qs = qs.filter(assigned_to=request.user)
         elif scope == "all":
-            qs = qs.filter(Q(requester=request.user) | Q(assigned_to=request.user) | Q(department=request.user.area))
+            qs = _visible_tickets_for(request.user, qs)
         else:
             qs = qs.filter(requester=request.user)
     elif scope == "mine":
@@ -159,7 +167,7 @@ def ticket_list(request):
     if status:
         qs = qs.filter(status=status)
     if department:
-        qs = qs.filter(department=department)
+        qs = qs.filter(Q(assigned_to__department=department) | Q(assigned_to__isnull=True, department=department))
     if search:
         search_q = Q(title__icontains=search) | Q(description__icontains=search)
         if search.isdigit():
@@ -170,7 +178,7 @@ def ticket_list(request):
         ("mine", "Meus chamados"),
         ("assigned", "Meus chamados a tratar"),
     ]
-    if request.user.is_superuser or user_can_admin(request.user):
+    if can_see_all:
         tabs.append(("all", "Todos os chamados"))
 
     return render(request, "tickets/list.html", {"tickets": qs, "tabs": tabs, "scope": scope, "status": status, "department": department, "search": search})
@@ -183,7 +191,9 @@ def ticket_detail(request, pk):
         return HttpResponseForbidden("Voce nao tem acesso a este chamado.")
 
     comment_form = TicketEventForm()
-    status_form = TicketStatusForm()
+    status_form = TicketStatusForm(status_choices=ticket_status_choices_for(request.user, ticket))
+    assignable_users = assignable_users_for(request.user, ticket)
+    assignment_form = TicketAssignmentForm(queryset=assignable_users, initial={"assigned_to": ticket.assigned_to_id})
     attachment_form = TicketAttachmentForm()
 
     if request.method == "POST":
@@ -202,7 +212,10 @@ def ticket_detail(request, pk):
                 return redirect("ticket_detail", pk=ticket.pk)
 
         elif action == "status":
-            status_form = TicketStatusForm(request.POST)
+            if request.POST.get("status") == ticket.status:
+                messages.error(request, "O chamado ja esta neste status.")
+                return redirect("ticket_detail", pk=ticket.pk)
+            status_form = TicketStatusForm(request.POST, status_choices=ticket_status_choices_for(request.user, ticket))
             if status_form.is_valid():
                 new_status = status_form.cleaned_data["status"]
                 old_status = ticket.status
@@ -235,8 +248,13 @@ def ticket_detail(request, pk):
                         )
 
                     if new_status == "FORWARDED":
+                        ticket.assigned_to = None
                         ticket.area = area_for_department(target_department)
                         ticket.department = target_department
+                    elif new_status == "IN_PROGRESS" and not ticket.assigned_to_id:
+                        ticket.assigned_to = request.user
+                        ticket.area = request.user.area
+                        ticket.department = request.user.department
                     ticket.status = new_status
                     if new_status == "CLOSED":
                         ticket.closed_at = ticket.closed_at or timezone.now()
@@ -245,7 +263,7 @@ def ticket_detail(request, pk):
                     elif new_status == "OPEN" and old_status == "CLOSED":
                         ticket.reopened_at = timezone.now()
                         ticket.reopened_count += 1
-                    ticket.save(update_fields=["status", "area", "department", "closed_at", "concluded_at", "reopened_at", "reopened_count", "last_status_change_at"])
+                    ticket.save(update_fields=["status", "assigned_to", "area", "department", "closed_at", "concluded_at", "reopened_at", "reopened_count", "last_status_change_at"])
                     TicketEvent.objects.create(
                         ticket=ticket,
                         actor=request.user,
@@ -256,6 +274,33 @@ def ticket_detail(request, pk):
                     )
                     messages.success(request, "Status atualizado.")
                     return redirect("ticket_detail", pk=ticket.pk)
+            else:
+                messages.error(request, "Nao foi possivel atualizar o status. Verifique os campos informados.")
+
+        elif action == "assignment":
+            assignment_form = TicketAssignmentForm(request.POST, queryset=assignable_users_for(request.user, ticket))
+            if assignment_form.is_valid():
+                new_responsible = assignment_form.cleaned_data["assigned_to"]
+                old_responsible = ticket.assigned_to
+                if old_responsible and old_responsible.pk == new_responsible.pk:
+                    messages.error(request, "Este usuario ja e o responsavel pelo chamado.")
+                elif not user_can_manage_ticket_responsible(request.user, ticket):
+                    messages.error(request, "Voce nao tem permissao para alterar o responsavel deste chamado.")
+                else:
+                    ticket.assigned_to = new_responsible
+                    ticket.area = new_responsible.area
+                    ticket.department = new_responsible.department
+                    ticket.save(update_fields=["assigned_to", "area", "department", "last_status_change_at"])
+                    TicketEvent.objects.create(
+                        ticket=ticket,
+                        actor=request.user,
+                        kind="TRANSFER",
+                        message=format_responsible_change_message(ticket, old_responsible, new_responsible, request.user),
+                    )
+                    messages.success(request, "Responsavel atualizado.")
+                    return redirect("ticket_detail", pk=ticket.pk)
+            else:
+                messages.error(request, "Nao foi possivel atualizar o responsavel.")
 
         elif action == "attachment":
             attachment_form = TicketAttachmentForm(request.POST, request.FILES)
@@ -289,6 +334,8 @@ def ticket_detail(request, pk):
             "ticket": ticket,
             "comment_form": comment_form,
             "status_form": status_form,
+            "assignment_form": assignment_form,
+            "can_manage_responsible": user_can_manage_ticket_responsible(request.user, ticket),
             "attachment_form": attachment_form,
         },
     )

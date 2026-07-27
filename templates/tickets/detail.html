@@ -27,7 +27,14 @@
     <article class="card" id="description">
       <p><strong>Chamado:</strong> {{ ticket.number }}</p>
       <p><strong>Solicitante:</strong> {{ ticket.requester.full_name }}</p>
-      <p><strong>Responsavel:</strong> {{ ticket.assigned_to.full_name|default:"Não definido" }}</p>
+      <p>
+        <strong>Responsavel:</strong>
+        {% if ticket.assigned_to %}
+          {{ ticket.assigned_to.full_name }} - {{ ticket.assigned_to.get_cargo_display }}
+        {% else %}
+          Nao definido
+        {% endif %}
+      </p>
       <p><strong>Area de destino:</strong> {{ ticket.get_area_display }}</p>
       <p><strong>Departamento de destino:</strong> {{ ticket.get_department_display }}</p>
       <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y - H:i" }}</p>
@@ -82,27 +89,41 @@
 </section>
 
 <section class="section">
-  <div class="grid-2">
-    <article class="card">
-      <h2>Mudanca de status</h2>
-      <form method="post" class="form-stack" id="status-form">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="status">
-        {{ status_form.status }}
-        <input type="hidden" name="message" id="status-message-field">
-        <input type="hidden" name="department" id="status-department-field">
-        <button class="primary" type="submit">Atualizar status</button>
-      </form>
-    </article>
+  <div class="grid-2 ticket-managemment-container">
+    <div class="status_assignedto-container">
+      {% if can_manage_responsible %}
+      <article class="card">
+        <h2>Responsavel</h2>
+        <form method="post" class="form-stack">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="assignment">
+          {{ assignment_form.assigned_to }}
+          {{ assignment_form.assigned_to.errors }}
+          <button class="primary" type="submit">Atualizar responsavel</button>
+        </form>
+      </article>
+      {% endif %}
+      
+      <article class="card">
+        <h2>Mudanca de status</h2>
+        <form method="post" class="form-stack" id="status-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="status">
+          {{ status_form.status }}
+          {{ status_form.status.errors }}
+          <input type="hidden" name="message" id="status-message-field">
+          <input type="hidden" name="department" id="status-department-field">
+          <button class="primary" type="submit">Atualizar status</button>
+        </form>
+      </article>
+    </div>
 
-    <article class="card">
+    <article class="card attachment-card">
       <h2>Anexos</h2>
-      <div class="stack compact">
+      <div class="stack compact attachment-list">
         {% for attachment in ticket.attachments.all %}
           <div class="attachment-container">
-            <div style="overflow: hidden;">
-              <a class="attachment" href="{{ attachment.file.url }}" target="_blank" rel="noreferrer">{{ attachment.original_name }}</a>
-            </div>
+            <a class="attachment" href="{{ attachment.file.url }}" target="_blank" rel="noreferrer">{{ attachment.original_name }}</a>
           </div>
         {% empty %}
           <div class="muted">Nenhum anexo enviado.</div>

@@ -285,6 +285,12 @@ class TicketStatusForm(forms.Form):
     department = forms.ChoiceField(choices=[("", "Selecionar departamento")] + DEPARTMENT_CHOICES, required=False)
     message = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Motivo da mudanca"}))
 
+    def __init__(self, *args, **kwargs):
+        status_choices = kwargs.pop("status_choices", None)
+        super().__init__(*args, **kwargs)
+        if status_choices is not None:
+            self.fields["status"].choices = [("", "Selecionar status")] + list(status_choices)
+
     def clean(self):
         cleaned = super().clean()
         status = cleaned.get("status")
@@ -292,6 +298,19 @@ class TicketStatusForm(forms.Form):
         if status == "FORWARDED" and not department:
             raise forms.ValidationError({"department": "Selecione o departamento de destino para encaminhar o chamado."})
         return cleaned
+
+
+class TicketAssignmentForm(forms.Form):
+    assigned_to = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        empty_label="Selecionar responsavel",
+        label="Responsavel",
+    )
+
+    def __init__(self, *args, **kwargs):
+        queryset = kwargs.pop("queryset", User.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields["assigned_to"].queryset = queryset
 
 
 class TicketAttachmentForm(forms.Form):

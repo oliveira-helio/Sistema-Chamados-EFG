@@ -227,6 +227,36 @@ textarea {
   padding: 20px;
 }
 
+.status_assignedto-container {
+  display: grid;
+  gap: 20px;
+  grid-template-rows: auto auto;
+  min-height: 0;
+}
+
+.attachment-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.attachment-list {
+  contain: size layout;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  scrollbar-gutter: stable;
+  border: 1px solid var(--line);
+    border-radius: 14px;
+}
+
+.attachment-card hr,
+.attachment-card .form-stack {
+  align-self: end;
+}
+
 .history-line {
   display: flex;
   width: 100%;
@@ -339,7 +369,10 @@ button:hover,
   gap: 14px;
 }
 .stack.compact {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  overflow-y: scroll;
 }
 
 .ticket-card {
@@ -1147,6 +1180,11 @@ body.modal-open {
   margin-top: 20px;
 }
 
+.ticket-managemment-container {
+  align-items: stretch;
+  grid-auto-rows: minmax(0, auto);
+}
+
 .muted {
   color: var(--muted);
 }
@@ -1166,13 +1204,18 @@ body.modal-open {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: #fff;
-  overflow-x: hidden;
+  min-width: 0;
+
 }
 
 .attachment{
+  display: block;
+  max-width: 100%;
   color: var(--brand);
   font-weight: 600;
-  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 hr {
@@ -1205,6 +1248,15 @@ hr {
 
   .content {
     margin-bottom: 32px;
+  }
+
+  .attachment-card {
+    overflow: visible;
+  }
+
+  .attachment-list {
+    contain: none;
+    max-height: 280px;
   }
 }
 
