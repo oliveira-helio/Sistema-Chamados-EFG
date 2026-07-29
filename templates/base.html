@@ -12,6 +12,8 @@
     <header class="topbar">
       <a class="brand" href="{% url 'home' %}">
         <img class="brand__mark" src="{% static 'img/logo.svg' %}" alt="">
+      </a>
+      <a class="brand" href="{% url 'home' %}">
         <span>Sistema de Chamados</span>
       </a>
       <button class="menu-toggle" type="button" aria-label="Abrir menu" onclick="document.body.classList.toggle('menu-open')">Menu</button>
@@ -30,6 +32,7 @@
           <a href="{% url 'login' %}">Entrar</a>
         {% endif %}
       </nav>
+        <span class="brand-text-under">Sistema de Chamados</span>
     </header>
 
     <main class="content">
