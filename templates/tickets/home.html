@@ -26,15 +26,25 @@
     </div>
   </div>
   <div class="panel" id="calendar">
-  <!-- 
-    <h2>O que esta pronto nesta base</h2>
-    <ul class="feature-list">
-      <li>Login por matricula ou e-mail</li>
-      <li>Cadastro por cargo e vinculo</li>
-      <li>Chamados com comentarios e anexos</li>
-      <li>Interface responsiva para celular</li>
-    </ul>
-    -->
+    <div class="calendar-widget" data-calendar>
+      <div class="calendar-widget__head">
+        <div>
+          <p class="eyebrow">Calendario</p>
+          <h2 data-calendar-title></h2>
+        </div>
+        <span class="calendar-widget__today" data-calendar-today></span>
+      </div>
+      <div class="calendar-widget__weekdays" aria-hidden="true">
+        <span>Dom</span>
+        <span>Seg</span>
+        <span>Ter</span>
+        <span>Qua</span>
+        <span>Qui</span>
+        <span>Sex</span>
+        <span>Sab</span>
+      </div>
+      <div class="calendar-widget__grid" data-calendar-grid></div>
+    </div>
   </div>
 </section>
 
@@ -125,6 +135,74 @@
 </div>
 
 <script>
+  ;(function () {
+    const calendar = document.querySelector('[data-calendar]')
+    const title = calendar?.querySelector('[data-calendar-title]')
+    const todayLabel = calendar?.querySelector('[data-calendar-today]')
+    const grid = calendar?.querySelector('[data-calendar-grid]')
+    if (!calendar || !title || !todayLabel || !grid) return
+
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth()
+    const currentDay = today.getDate()
+    const monthName = today.toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric',
+    })
+    const readableToday = today.toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+    })
+    const firstWeekday = new Date(year, month, 1).getDay()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const previousMonthDays = new Date(year, month, 0).getDate()
+    const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7
+
+    title.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+    todayLabel.textContent = readableToday.charAt(0).toUpperCase() + readableToday.slice(1)
+    grid.innerHTML = ''
+
+    for (let index = 0; index < totalCells; index += 1) {
+      const cell = document.createElement('time')
+      cell.className = 'calendar-widget__day'
+
+      let dayNumber = index - firstWeekday + 1
+      let cellMonth = month
+      let cellYear = year
+
+      if (dayNumber < 1) {
+        dayNumber = previousMonthDays + dayNumber
+        cellMonth = month - 1
+        if (cellMonth < 0) {
+          cellMonth = 11
+          cellYear -= 1
+        }
+        cell.classList.add('is-muted')
+      } else if (dayNumber > daysInMonth) {
+        dayNumber -= daysInMonth
+        cellMonth = month + 1
+        if (cellMonth > 11) {
+          cellMonth = 0
+          cellYear += 1
+        }
+        cell.classList.add('is-muted')
+      }
+
+      const isToday =
+        cellYear === year && cellMonth === month && dayNumber === currentDay
+      if (isToday) {
+        cell.classList.add('is-today')
+        cell.setAttribute('aria-current', 'date')
+      }
+
+      cell.dateTime = `${cellYear}-${String(cellMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`
+      cell.textContent = String(dayNumber).padStart(2, '0')
+      grid.appendChild(cell)
+    }
+  })()
+
   ;(function () {
     const modal = document.getElementById('announcementImageModal')
     const modalImage = document.getElementById('announcementImageModalImage')

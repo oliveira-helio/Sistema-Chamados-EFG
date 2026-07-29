@@ -60,6 +60,7 @@
           <p>{{ change.before_data.full_name|default:"" }}{% if change.after_data.full_name %} -> {{ change.after_data.full_name }}{% endif %}</p>
           <small class="meta">Por {{ change.actor.full_name }} - {{ change.actor.get_cargo_display }}</small>
         </div>
+        <hr/>
       {% endfor %}
     </div>
   </section>

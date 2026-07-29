@@ -54,33 +54,44 @@
 </section>
 
 <section class="section">
-  <div class="section-head">
-    <h2>Historico</h2>
-  </div>
-  <div class="stack">
+  <div class="time-line">
+    <div class="section-head">
+      <h2>Descrição</h2>
+    </div>
+
     <article class="card event-card">
       <div class="ticket-head">
-        <strong>Descricao</strong>
-        <span class="meta">{{ ticket.opened_at|date:"d/m/Y H:i" }}</span>
+        <!-- <strong>Descricao</strong> -->
+        <span class="meta ">Aberto em {{ ticket.opened_at|date:"d/m/Y H:i" }}</span>
       </div>
       <p>{{ ticket.description|linebreaksbr }}</p>
       <small>Por {{ ticket.requester.full_name }} - {{ ticket.requester.get_cargo_display }}</small>
     </article>
+  </div>
+
+  <hr />
+  <div class="time-line">
+    <div class="section-head">
+      <h2>Historico</h2>
+    </div>
 
     {% for event in ticket.events.all %}
       {% if event.kind == "COMMENT" %}
-        <article class="card event-card">
-          <div class="ticket-head">
-            <strong>Comentario</strong>
-            <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
-          </div>
-          <p>{{ event.message|linebreaksbr }}</p>
-          <small>Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
-        </article>
-      {% else %}
-        <div>
-          <p class="history-line"><span class="history-text">{{ event.message }}</span><span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span></p>
+      <article class="card event-card">
+        <div class="ticket-head">
+          <strong>Comentario</strong>
+          <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
         </div>
+        <p>{{ event.message|linebreaksbr }}</p>
+        <small>Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }}</small>
+      </article>
+      <hr />
+      {% else %}
+      <div class="history-line">
+        <p><span class="history-text">{{ event.message }}</span></p>
+        <small>Por {{ event.actor.full_name }} - {{ event.actor.get_cargo_display }} <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span></small>
+      </div>
+      <hr />
       {% endif %}
     {% empty %}
       <div class="card muted">Nenhum registro ainda.</div>

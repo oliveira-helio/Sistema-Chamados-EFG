@@ -16,7 +16,7 @@
       <a class="brand" href="{% url 'home' %}">
         <span>Sistema de Chamados</span>
       </a>
-      <button class="menu-toggle" type="button" aria-label="Abrir menu" onclick="document.body.classList.toggle('menu-open')">Menu</button>
+      <button class="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" data-menu-toggle>Menu</button>
       <nav class="nav">
         {% if user.is_authenticated %}
           <a href="{% url 'home' %}">Home</a>
@@ -55,6 +55,38 @@
   </div>
   <script>
     (function () {
+      const menuToggle = document.querySelector("[data-menu-toggle]");
+      const nav = document.querySelector(".nav");
+      const menuQuery = window.matchMedia("(max-width: 1023px)");
+
+      function setMenuOpen(isOpen) {
+        document.body.classList.toggle("menu-open", isOpen);
+        if (menuToggle) {
+          menuToggle.setAttribute("aria-expanded", String(isOpen));
+        }
+      }
+
+      if (menuToggle && nav) {
+        menuToggle.addEventListener("click", (event) => {
+          event.stopPropagation();
+          setMenuOpen(!document.body.classList.contains("menu-open"));
+        });
+
+        document.addEventListener("click", (event) => {
+          if (!menuQuery.matches || !document.body.classList.contains("menu-open")) return;
+          const clickedInsideMenu = nav.contains(event.target) || menuToggle.contains(event.target);
+          if (!clickedInsideMenu) {
+            setMenuOpen(false);
+          }
+        });
+
+        window.addEventListener("resize", () => {
+          if (!menuQuery.matches) {
+            setMenuOpen(false);
+          }
+        });
+      }
+
       const toasts = document.querySelectorAll("[data-toast]");
       toasts.forEach((toast) => {
         const closeButton = toast.querySelector("[data-toast-close]");
