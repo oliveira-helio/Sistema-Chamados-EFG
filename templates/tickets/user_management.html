@@ -1,17 +1,20 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Usuarios</p>
-      <h1>Gestao de usuarios</h1>
+      <p class="eyebrow">Usuários</p>
+      <h1>Gestão de usuários</h1>
     </div>
-    <a class="primary link-button" href="{% url 'user_create' %}">Novo usuario</a>
+    <div class="section-actions">
+      <a class="link-button" href="{% url 'user_bulk_upload' %}">Importar colaboradores</a>
+      <a class="primary link-button" href="{% url 'user_create' %}">Novo usuário</a>
+    </div>
   </div>
 
   <form class="card filters" method="get">
     <div class="filter-grid">
-      <input type="search" name="q" value="{{ search }}" placeholder="Buscar por nome, matricula ou e-mail">
+      <input type="search" name="q" value="{{ search }}" placeholder="Buscar por nome, matrícula ou e-mail">
       <button class="primary" type="submit">Filtrar</button>
     </div>
   </form>
@@ -37,10 +40,10 @@
           </div>
         </div>
         <p>{{ user.matricula }} | {{ user.email }}</p>
-        <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem area" }} - {{ user.get_department_display|default:"Sem departamento" }} - {{ user.get_cargo_display }}</p>
+        <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem área" }} - {{ user.get_department_display|default:"Sem departamento" }} - {{ user.get_cargo_display }}</p>
       </article>
     {% empty %}
-      <div class="card muted">Nenhum usuario encontrado.</div>
+      <div class="card muted">Nenhum usuário encontrado.</div>
     {% endfor %}
   </div>
 </section>
@@ -48,7 +51,7 @@
 {% if recent_changes %}
   <section class="section">
     <div class="section-head">
-      <h2>Historico recente</h2>
+      <h2>Histórico recente</h2>
     </div>
     <div class="stack compact">
       {% for change in recent_changes %}

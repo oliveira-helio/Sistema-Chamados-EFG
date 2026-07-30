@@ -51,7 +51,7 @@ def close_overdue_tickets():
             ticket=ticket,
             actor=system_user,
             kind="STATUS",
-            message="Chamado concluido automaticamente pelo sistema apos 3 dias em encerrado.",
+            message="Chamado concluído automaticamente pelo sistema após 3 dias em encerrado.",
             from_status=old_status,
             to_status="DONE",
         )
@@ -61,8 +61,8 @@ def close_overdue_tickets():
 
 
 class Command(BaseCommand):
-    help = "Conclui automaticamente chamados encerrados ha mais de 3 dias."
+    help = "Conclui automaticamente chamados encerrados há mais de 3 dias."
 
     def handle(self, *args, **options):
         processed = close_overdue_tickets()
-        self.stdout.write(self.style.SUCCESS(f"Chamados concluidos automaticamente: {processed}"))
+        self.stdout.write(self.style.SUCCESS(f"Chamados concluídos automaticamente: {processed}"))

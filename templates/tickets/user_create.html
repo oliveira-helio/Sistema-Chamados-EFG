@@ -1,23 +1,22 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
     <div>
       <p class="eyebrow">Cadastro</p>
-      <h1>Novo usuario</h1>
+      <h1>Novo usuário</h1>
     </div>
   </div>
   <form class="card form-stack" method="post">
     {% csrf_token %}
     <label>Nome completo {{ form.full_name }}</label>
     <label>E-mail {{ form.email }}</label>
-    <label>Matricula {{ form.matricula }}</label>
-    <label>Vinculo {{ form.vinculo }}</label>
+    <label>Matrícula {{ form.matricula }}</label>
+    <label>Vínculo {{ form.vinculo }}</label>
     <label>Cargo {{ form.cargo }}</label>
     <label>Senha {{ form.password1 }}</label>
     <label>Confirmar senha {{ form.password2 }}</label>
-    <button class="primary" type="submit">Salvar usuario</button>
+    <button class="primary" type="submit">Salvar usuário</button>
   </form>
 </section>
 {% endblock %}
-

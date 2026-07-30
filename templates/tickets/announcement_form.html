@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
@@ -12,15 +12,15 @@
     {{ form.non_field_errors }}
     {% if form.errors %}
       <div class="alert error">
-        <strong>Nao foi possivel salvar o comunicado.</strong>
+        <strong>Não foi possível salvar o comunicado.</strong>
         <div>Confira os campos abaixo.</div>
       </div>
     {% endif %}
-    <label>Titulo {{ form.title }}</label>
+    <label>Título {{ form.title }}</label>
     {{ form.title.errors }}
     <label>Mensagem formatada</label>
     <div class="rich-editor">
-      <div class="rich-editor__toolbar" role="toolbar" aria-label="Formatacao do comunicado">
+      <div class="rich-editor__toolbar" role="toolbar" aria-label="Formatação do comunicado">
         <div class="rich-editor__group" aria-label="Estilo">
           <button type="button" data-format="bold"><strong>B</strong></button>
           <button type="button" data-format="italic"><em>I</em></button>
@@ -56,7 +56,7 @@
     <div class="form-media-upload">
       <label for="announcementImages">Imagens do comunicado</label>
       <input id="announcementImages" type="file" name="images" multiple accept="image/*">
-      <p class="field-help">Voce pode enviar varias imagens de uma vez para montar o carousel do comunicado.</p>
+      <p class="field-help">Você pode enviar várias imagens de uma vez para montar o carrossel do comunicado.</p>
       {% if announcement and announcement.gallery_items %}
         <div class="announcement-preview-grid">
           {% for image in announcement.gallery_items %}
@@ -69,7 +69,7 @@
     </div>
     <label class="inline-checkbox">
       {{ form.is_published }}
-      <span>Publicar comunicado na pagina inicial</span>
+      <span>Publicar comunicado na página inicial</span>
     </label>
     <p class="field-help">Desmarque se quiser manter o comunicado salvo, mas sem exibi-lo na home.</p>
     <button class="primary" type="submit">Salvar comunicado</button>

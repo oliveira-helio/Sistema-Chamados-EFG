@@ -1,10 +1,10 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Anuncios</p>
-      <h1>Gestao de anuncios</h1>
+      <p class="eyebrow">Anúncios</p>
+      <h1>Gestão de anúncios</h1>
     </div>
     <a class="primary link-button" href="{% url 'announcement_create' %}">Novo comunicado</a>
   </div>
@@ -64,7 +64,7 @@
 {% if recent_changes %}
   <section class="section">
     <div class="section-head">
-      <h2>Historico recente</h2>
+      <h2>Histórico recente</h2>
     </div>
     <div class="stack compact">
       {% for change in recent_changes %}

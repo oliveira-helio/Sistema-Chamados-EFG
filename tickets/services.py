@@ -108,7 +108,7 @@ def format_ticket_status_message(ticket, old_status, new_status, actor):
 def apply_ticket_status_change(ticket, actor, new_status, message=""):
     old_status = ticket.status
     if new_status == old_status:
-        raise ValidationError("O chamado ja esta neste status.")
+        raise ValidationError("O chamado já está neste status.")
     ticket.status = new_status
     if new_status == "CLOSED":
         ticket.closed_at = ticket.closed_at or timezone.now()
@@ -136,11 +136,11 @@ def format_responsible_change_message(ticket, old_responsible, new_responsible, 
     actor_name = actor.full_name if getattr(actor, "full_name", None) else "Sistema"
     actor_role = actor.get_cargo_display() if getattr(actor, "cargo", None) else "Sistema"
     actor_label = f"{actor_name} - {actor_role}"
-    old_label = "Sem responsavel"
+    old_label = "Sem responsável"
     if old_responsible:
         old_label = f"{old_responsible.full_name} - {old_responsible.get_cargo_display()}"
     new_label = f"{new_responsible.full_name} - {new_responsible.get_cargo_display()}"
-    return f"Responsavel alterado de {old_label} para {new_label} por {actor_label}."
+    return f"Responsável alterado de {old_label} para {new_label} por {actor_label}."
 
 
 def assignable_users_for(user, ticket):
@@ -167,7 +167,7 @@ def close_overdue_tickets():
             ticket,
             system_user,
             "DONE",
-            "Chamado concluido automaticamente pelo sistema apos 3 dias em encerrado.",
+            "Chamado concluído automaticamente pelo sistema após 3 dias em encerrado.",
         )
         processed += 1
     return processed

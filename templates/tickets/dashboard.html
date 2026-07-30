@@ -1,8 +1,8 @@
-{% extends "base.html" %} {% block content %}
+﻿{% extends "base.html" %} {% block content %}
 <section class="section">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Resumo rapido</p>
+      <p class="eyebrow">Resumo rápido</p>
       <h1>Bem-vindo, {{ user.full_name }}</h1>
     </div>
   </div>
@@ -25,9 +25,9 @@
 {% if overdue_count %}
 <section class="section">
   <div class="alert error">
-    <strong>Ha {{ overdue_count }} chamado(s) em atraso.</strong>
+    <strong>Há {{ overdue_count }} chamado(s) em atraso.</strong>
     <div>
-      Verifique os chamados com prazo expirado para evitar novas pendencias.
+      Verifique os chamados com prazo expirado para evitar novas pendências.
     </div>
   </div>
 </section>

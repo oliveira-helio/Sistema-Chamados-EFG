@@ -6,15 +6,19 @@ from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+import csv
+import io
 import json
 
 from django.utils import timezone
+from django.db import transaction
 
 from .forms import (
     AnnouncementForm,
     LoginForm,
     UserAdminForm,
     UserUpdateForm,
+    BulkUserUploadForm,
     TicketAttachmentForm,
     TicketAssignmentForm,
     TicketCreateForm,
@@ -125,7 +129,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     request.session.flush()
-    messages.success(request, "Voce saiu do sistema.")
+    messages.success(request, "Você saiu do sistema.")
     return redirect("login")
 
 
@@ -188,7 +192,7 @@ def ticket_list(request):
 def ticket_detail(request, pk):
     ticket = get_object_or_404(Ticket.objects.select_related("requester", "assigned_to", "category"), pk=pk)
     if not user_can_view_ticket(request.user, ticket):
-        return HttpResponseForbidden("Voce nao tem acesso a este chamado.")
+        return HttpResponseForbidden("Você não tem acesso a este chamado.")
 
     comment_form = TicketEventForm()
     status_form = TicketStatusForm(status_choices=ticket_status_choices_for(request.user, ticket))
@@ -208,12 +212,12 @@ def ticket_detail(request, pk):
                     kind="COMMENT",
                     message=comment_form.cleaned_data["message"],
                 )
-                messages.success(request, "Comentario adicionado.")
+                messages.success(request, "Comentário adicionado.")
                 return redirect("ticket_detail", pk=ticket.pk)
 
         elif action == "status":
             if request.POST.get("status") == ticket.status:
-                messages.error(request, "O chamado ja esta neste status.")
+                messages.error(request, "O chamado já está neste status.")
                 return redirect("ticket_detail", pk=ticket.pk)
             status_form = TicketStatusForm(request.POST, status_choices=ticket_status_choices_for(request.user, ticket))
             if status_form.is_valid():
@@ -223,18 +227,18 @@ def ticket_detail(request, pk):
                 allowed_statuses = {value for value, _label in ticket_status_choices_for(request.user, ticket)}
 
                 if new_status == old_status:
-                    messages.error(request, "O chamado ja esta neste status.")
+                    messages.error(request, "O chamado já está neste status.")
                 elif old_status == "DONE":
-                    messages.error(request, "Chamado concluido nao pode receber nova alteracao de status.")
+                    messages.error(request, "Chamado concluído não pode receber nova alteração de status.")
                 elif new_status not in allowed_statuses:
                     if new_status == "CLOSED":
-                        messages.error(request, "Voce nao tem permissao para encerrar este chamado.")
+                        messages.error(request, "Você não tem permissão para encerrar este chamado.")
                     elif new_status == "DONE":
-                        messages.error(request, "Voce nao tem permissao para concluir este chamado.")
+                        messages.error(request, "Você não tem permissão para concluir este chamado.")
                     elif new_status == "OPEN":
-                        messages.error(request, "Voce nao tem permissao para reabrir este chamado.")
+                        messages.error(request, "Você não tem permissão para reabrir este chamado.")
                     else:
-                        messages.error(request, "Voce nao tem permissao para alterar este chamado.")
+                        messages.error(request, "Você não tem permissão para alterar este chamado.")
                 elif new_status == "FORWARDED" and not status_form.cleaned_data.get("department"):
                     messages.error(request, "Selecione o departamento de destino para encaminhar o chamado.")
                 else:
@@ -275,7 +279,7 @@ def ticket_detail(request, pk):
                     messages.success(request, "Status atualizado.")
                     return redirect("ticket_detail", pk=ticket.pk)
             else:
-                messages.error(request, "Nao foi possivel atualizar o status. Verifique os campos informados.")
+                messages.error(request, "Não foi possível atualizar o status. Verifique os campos informados.")
 
         elif action == "assignment":
             assignment_form = TicketAssignmentForm(request.POST, queryset=assignable_users_for(request.user, ticket))
@@ -283,9 +287,9 @@ def ticket_detail(request, pk):
                 new_responsible = assignment_form.cleaned_data["assigned_to"]
                 old_responsible = ticket.assigned_to
                 if old_responsible and old_responsible.pk == new_responsible.pk:
-                    messages.error(request, "Este usuario ja e o responsavel pelo chamado.")
+                    messages.error(request, "Este usuário já é o responsável pelo chamado.")
                 elif not user_can_manage_ticket_responsible(request.user, ticket):
-                    messages.error(request, "Voce nao tem permissao para alterar o responsavel deste chamado.")
+                    messages.error(request, "Você não tem permissão para alterar o responsável deste chamado.")
                 else:
                     ticket.assigned_to = new_responsible
                     ticket.area = new_responsible.area
@@ -297,10 +301,10 @@ def ticket_detail(request, pk):
                         kind="TRANSFER",
                         message=format_responsible_change_message(ticket, old_responsible, new_responsible, request.user),
                     )
-                    messages.success(request, "Responsavel atualizado.")
+                    messages.success(request, "Responsável atualizado.")
                     return redirect("ticket_detail", pk=ticket.pk)
             else:
-                messages.error(request, "Nao foi possivel atualizar o responsavel.")
+                messages.error(request, "Não foi possível atualizar o responsável.")
 
         elif action == "attachment":
             attachment_form = TicketAttachmentForm(request.POST, request.FILES)
@@ -383,6 +387,162 @@ def _admin_users_queryset(search=""):
     return qs
 
 
+USER_IMPORT_HEADERS = {
+    "matricula": "matricula",
+    "matrícula": "matricula",
+    "nome": "full_name",
+    "nome_completo": "full_name",
+    "full_name": "full_name",
+    "email": "email",
+    "e-mail": "email",
+    "vinculo": "vinculo",
+    "vínculo": "vinculo",
+    "area": "area",
+    "área": "area",
+    "departamento": "department",
+    "department": "department",
+    "cargo": "cargo",
+    "senha": "password",
+    "password": "password",
+    "telefone": "phone",
+    "phone": "phone",
+    "ativo": "is_active",
+    "is_active": "is_active",
+}
+
+USER_IMPORT_REQUIRED_FIELDS = ["matricula", "full_name", "email", "vinculo", "area", "department", "cargo", "password"]
+
+
+def _normalize_header(header):
+    return (header or "").strip().lower().replace(" ", "_")
+
+
+def _decode_uploaded_text(uploaded_file):
+    raw = uploaded_file.read()
+    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+        try:
+            return raw.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    return raw.decode("utf-8", errors="replace")
+
+
+def _detect_delimiter(sample):
+    try:
+        return csv.Sniffer().sniff(sample[:2048], delimiters=";,	,").delimiter
+    except csv.Error:
+        if ";" in sample:
+            return ";"
+        if "\t" in sample:
+            return "\t"
+        return ","
+
+
+def _parse_bool(value):
+    value = (value or "").strip().lower()
+    if not value:
+        return True
+    if value in {"1", "sim", "s", "true", "ativo", "ativa"}:
+        return True
+    if value in {"0", "nao", "não", "n", "false", "inativo", "inativa"}:
+        return False
+    raise ValueError("Use sim/não, true/false ou 1/0.")
+
+
+def _read_user_import_rows(uploaded_file):
+    text = _decode_uploaded_text(uploaded_file)
+    delimiter = _detect_delimiter(text)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    if not reader.fieldnames:
+        return [], ["Arquivo sem cabeçalho."]
+
+    normalized_headers = {}
+    for header in reader.fieldnames:
+        normalized = USER_IMPORT_HEADERS.get(_normalize_header(header))
+        if normalized:
+            normalized_headers[header] = normalized
+
+    missing = [field for field in USER_IMPORT_REQUIRED_FIELDS if field not in normalized_headers.values()]
+    if missing:
+        return [], [f"Cabeçalho obrigatório ausente: {', '.join(missing)}."]
+
+    rows = []
+    errors = []
+    seen_matriculas = set()
+    seen_emails = set()
+
+    for line_number, source_row in enumerate(reader, start=2):
+        if not any((value or "").strip() for value in source_row.values()):
+            continue
+        row = {target: (source_row.get(source) or "").strip() for source, target in normalized_headers.items()}
+        for field in USER_IMPORT_REQUIRED_FIELDS:
+            if not row.get(field):
+                errors.append(f"Linha {line_number}: campo obrigatório vazio ({field}).")
+
+        matricula = row.get("matricula", "")
+        email = row.get("email", "").lower()
+        if matricula:
+            if matricula in seen_matriculas:
+                errors.append(f"Linha {line_number}: matrícula duplicada no arquivo ({matricula}).")
+            seen_matriculas.add(matricula)
+        if email:
+            if email in seen_emails:
+                errors.append(f"Linha {line_number}: e-mail duplicado no arquivo ({email}).")
+            seen_emails.add(email)
+
+        rows.append((line_number, row))
+
+    if not rows:
+        errors.append("Arquivo sem colaboradores para importar.")
+    return rows, errors
+
+
+def _validate_user_import_rows(rows):
+    errors = []
+    matriculas = [row["matricula"] for _line, row in rows if row.get("matricula")]
+    emails = [row["email"] for _line, row in rows if row.get("email")]
+    existing_matriculas = set(User.objects.filter(matricula__in=matriculas).values_list("matricula", flat=True))
+    existing_emails = set(User.objects.filter(email__in=emails).values_list("email", flat=True))
+
+    users_to_create = []
+    for line_number, row in rows:
+        if row.get("matricula") in existing_matriculas:
+            errors.append(f"Linha {line_number}: já existe usuário com esta matrícula.")
+        if row.get("email") in existing_emails:
+            errors.append(f"Linha {line_number}: já existe usuário com este e-mail.")
+
+        try:
+            is_active = _parse_bool(row.get("is_active", "sim"))
+        except ValueError as exc:
+            errors.append(f"Linha {line_number}: campo ativo inválido. {exc}")
+            is_active = True
+
+        user = User(
+            matricula=row.get("matricula", ""),
+            email=row.get("email", ""),
+            full_name=row.get("full_name", ""),
+            vinculo=row.get("vinculo", ""),
+            area=row.get("area", ""),
+            department=row.get("department", ""),
+            cargo=row.get("cargo", ""),
+            phone=row.get("phone", ""),
+            is_active=is_active,
+        )
+        try:
+            user.full_clean()
+        except Exception as exc:
+            if hasattr(exc, "message_dict"):
+                details = []
+                for field_errors in exc.message_dict.values():
+                    details.extend(field_errors)
+                errors.append(f"Linha {line_number}: {'; '.join(details)}")
+            else:
+                errors.append(f"Linha {line_number}: {exc}")
+        users_to_create.append((user, row["password"]))
+
+    return users_to_create, errors
+
+
 @login_required
 @user_passes_test(user_can_admin)
 def user_management(request):
@@ -399,11 +559,47 @@ def user_create(request):
     if request.method == "POST" and form.is_valid():
         user = form.save()
         _log_change("USER", user.pk, "CREATE", request.user, after_data=serialize_user_for_audit(user))
-        messages.success(request, f"Usuario criado: {user.full_name}")
+        messages.success(request, f"Usuário criado: {user.full_name}")
         return redirect("user_management")
     if request.method == "POST" and not form.is_valid():
-        messages.error(request, "Nao foi possivel salvar o usuario. Verifique os campos informados.")
-    return render(request, "tickets/user_form.html", {"form": form, "title": "Novo usuario"})
+        messages.error(request, "Não foi possível salvar o usuário. Verifique os campos informados.")
+    return render(request, "tickets/user_form.html", {"form": form, "title": "Novo usuário"})
+
+
+@login_required
+@user_passes_test(user_can_admin)
+def user_bulk_upload(request):
+    form = BulkUserUploadForm(request.POST or None, request.FILES or None)
+    import_errors = []
+    preview_count = 0
+    if request.method == "POST" and form.is_valid():
+        rows, import_errors = _read_user_import_rows(form.cleaned_data["file"])
+        preview_count = len(rows)
+        users_to_create, validation_errors = _validate_user_import_rows(rows) if not import_errors else ([], [])
+        import_errors.extend(validation_errors)
+
+        if not import_errors:
+            with transaction.atomic():
+                for user, password in users_to_create:
+                    user.set_password(password)
+                    user.save()
+                    _log_change("USER", user.pk, "CREATE", request.user, after_data=serialize_user_for_audit(user))
+            messages.success(request, f"{len(users_to_create)} colaborador(es) importado(s) com sucesso.")
+            return redirect("user_management")
+
+        messages.error(request, "Não foi possível importar os colaboradores. Corrija o arquivo e tente novamente.")
+    elif request.method == "POST":
+        messages.error(request, "Não foi possível ler o arquivo enviado.")
+
+    return render(
+        request,
+        "tickets/user_bulk_upload.html",
+        {
+            "form": form,
+            "import_errors": import_errors,
+            "preview_count": preview_count,
+        },
+    )
 
 
 @login_required
@@ -417,11 +613,11 @@ def user_edit(request, pk):
         updated.is_staff = updated.cargo in {"TEC_INFORMATICA", "DIRETOR", "VICE_DIRETOR"}
         updated.save()
         _log_change("USER", updated.pk, "UPDATE", request.user, before_data=before_data, after_data=serialize_user_for_audit(updated))
-        messages.success(request, f"Usuario atualizado: {user.full_name}")
+        messages.success(request, f"Usuário atualizado: {user.full_name}")
         return redirect("user_management")
     if request.method == "POST" and not form.is_valid():
-        messages.error(request, "Nao foi possivel atualizar o usuario. Verifique os campos informados.")
-    return render(request, "tickets/user_form.html", {"form": form, "title": f"Editar usuario: {user.full_name}"})
+        messages.error(request, "Não foi possível atualizar o usuário. Verifique os campos informados.")
+    return render(request, "tickets/user_form.html", {"form": form, "title": f"Editar usuário: {user.full_name}"})
 
 
 @login_required
@@ -435,7 +631,7 @@ def user_change_password(request, pk):
         messages.success(request, "Senha alterada com sucesso.")
         return redirect("user_management")
     if request.method == "POST" and not form.is_valid():
-        messages.error(request, "Nao foi possivel alterar a senha. Verifique os campos informados.")
+        messages.error(request, "Não foi possível alterar a senha. Verifique os campos informados.")
     return render(request, "tickets/user_password_form.html", {"form": form, "title": f"Alterar senha: {user.full_name}"})
 
 
@@ -458,7 +654,7 @@ def user_toggle_active(request, pk):
     )
     messages.success(
         request,
-        f"Usuario {'ativado' if user.is_active else 'inativado'} com sucesso.",
+        f"Usuário {'ativado' if user.is_active else 'inativado'} com sucesso.",
     )
     return redirect("user_management")
 
@@ -479,7 +675,7 @@ def announcement_create(request):
                 sort_order=index,
             )
         _log_change("ANNOUNCEMENT", announcement.pk, "CREATE", request.user, after_data=serialize_announcement_for_audit(announcement))
-        messages.success(request, "Anuncio publicado.")
+        messages.success(request, "Anúncio publicado.")
         return redirect("home")
     return render(request, "tickets/announcement_create.html", {"form": form})
 
@@ -517,14 +713,14 @@ def announcement_edit(request, pk):
                 sort_order=start_index + offset,
             )
         _log_change("ANNOUNCEMENT", announcement.pk, "UPDATE", request.user, before_data=before_data, after_data=serialize_announcement_for_audit(announcement))
-        messages.success(request, "Anuncio atualizado.")
+        messages.success(request, "Anúncio atualizado.")
         return redirect("announcement_management")
     return render(
         request,
         "tickets/announcement_form.html",
         {
             "form": form,
-            "title": "Editar anuncio",
+            "title": "Editar anúncio",
             "announcement": announcement,
         },
     )
@@ -549,7 +745,7 @@ def announcement_toggle_publish(request, pk):
     )
     messages.success(
         request,
-        "Anuncio publicado." if announcement.is_published else "Anuncio despublicado.",
+        "Anúncio publicado." if announcement.is_published else "Anúncio despublicado.",
     )
     return redirect("announcement_management")
 
@@ -564,7 +760,7 @@ def announcement_delete(request, pk):
     announcement.is_published = False
     announcement.save(update_fields=["is_published"])
     _log_change("ANNOUNCEMENT", announcement.pk, "UNPUBLISH", request.user, before_data=before_data, after_data=serialize_announcement_for_audit(announcement))
-    messages.success(request, "Anuncio despublicado.")
+    messages.success(request, "Anúncio despublicado.")
     return redirect("announcement_management")
 
 

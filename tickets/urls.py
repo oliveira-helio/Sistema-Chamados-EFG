@@ -14,6 +14,7 @@ urlpatterns = [
     path("chamados/<int:pk>/", views.ticket_detail, name="ticket_detail"),
     path("usuarios/", views.user_management, name="user_management"),
     path("usuarios/novo/", views.user_create, name="user_create"),
+    path("usuarios/importar/", views.user_bulk_upload, name="user_bulk_upload"),
     path("usuarios/<int:pk>/editar/", views.user_edit, name="user_edit"),
     path("usuarios/<int:pk>/senha/", views.user_change_password, name="user_change_password"),
     path("usuarios/<int:pk>/ativar/", views.user_toggle_active, name="user_toggle_active"),

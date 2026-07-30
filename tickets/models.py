@@ -15,7 +15,7 @@ ADMIN_CARGOS = {
 
 
 VINCULO_CHOICES = [
-    ("ADMINISTRATIVO", "Funcionario administrativo"),
+    ("ADMINISTRATIVO", "Funcionário administrativo"),
     ("PROFESSOR", "Professor"),
 ]
 
@@ -24,27 +24,27 @@ AREA_CHOICES = [
     ("VICE_DIRETORIA", "Vice-diretoria"),
     ("SECRETARIA", "Secretaria"),
     ("STAI", "Stai"),
-    ("COORDENACAO_PEDAGOGICA", "Coordenacao pedagogica"),
+    ("COORDENACAO_PEDAGOGICA", "Coordenação pedagógica"),
 ]
 
 DEPARTMENT_CHOICES = [
     ("DIRETORIA", "Diretoria"),
     ("VICE_DIRETORIA", "Vice-diretoria"),
-    ("TI", "Tecnologia da Informacao"),
+    ("TI", "Tecnologia da Informação"),
     ("PSICOLOGIA", "Psicologia"),
-    ("SEGURANCA", "Seguranca"),
+    ("SEGURANCA", "Segurança"),
     ("ZELADORIA", "Zeladoria"),
     ("COZINHA", "Cozinha"),
-    ("MANUTENCAO", "Manutencao"),
-    ("ESTAGIO", "Estagio"),
+    ("MANUTENCAO", "Manutenção"),
+    ("ESTAGIO", "Estágio"),
     ("MONITORIA", "Monitoria"),
     ("SECRETARIA", "Secretaria"),
     ("STAI", "Stai"),
-    ("COORDENACAO_PEDAGOGICA", "Coordenacao pedagogica"),
-    ("COORDENACAO_TECNICA", "Coordenacao tecnica"),
+    ("COORDENACAO_PEDAGOGICA", "Coordenação pedagógica"),
+    ("COORDENACAO_TECNICA", "Coordenação técnica"),
     ("BIBLIOTECA", "Biblioteca"),
-    ("LABORATORIOS", "Laboratorios"),
-    ("DOCENCIA", "Docencia"),
+    ("LABORATORIOS", "Laboratórios"),
+    ("DOCENCIA", "Docência"),
 ]
 
 
@@ -54,13 +54,13 @@ DEPARTMENTS_BY_AREA = {
     ],
     "VICE_DIRETORIA": [
         ("VICE_DIRETORIA", "Vice-diretoria"),
-        ("TI", "Tecnologia da Informacao"),
+        ("TI", "Tecnologia da Informação"),
         ("PSICOLOGIA", "Psicologia"),
-        ("SEGURANCA", "Seguranca"),
+        ("SEGURANCA", "Segurança"),
         ("ZELADORIA", "Zeladoria"),
         ("COZINHA", "Cozinha"),
-        ("MANUTENCAO", "Manutencao"),
-        ("ESTAGIO", "Estagio"),
+        ("MANUTENCAO", "Manutenção"),
+        ("ESTAGIO", "Estágio"),
         ("MONITORIA", "Monitoria"),
     ],
     "SECRETARIA": [
@@ -70,11 +70,11 @@ DEPARTMENTS_BY_AREA = {
         ("STAI", "Stai"),
     ],
     "COORDENACAO_PEDAGOGICA": [
-        ("COORDENACAO_PEDAGOGICA", "Coordenacao pedagogica"),
-        ("COORDENACAO_TECNICA", "Coordenacao tecnica"),
+        ("COORDENACAO_PEDAGOGICA", "Coordenação pedagógica"),
+        ("COORDENACAO_TECNICA", "Coordenação técnica"),
         ("BIBLIOTECA", "Biblioteca"),
-        ("LABORATORIOS", "Laboratorios"),
-        ("DOCENCIA", "Docencia"),
+        ("LABORATORIOS", "Laboratórios"),
+        ("DOCENCIA", "Docência"),
     ],
 }
 
@@ -87,7 +87,7 @@ CARGO_CHOICES_BY_DEPARTMENT = {
         ("VICE_DIRETOR", "Vice-diretor(a)"),
     ],
     "TI": [
-        ("TEC_INFORMATICA", "Tecnico(a) de Informatica"),
+        ("TEC_INFORMATICA", "Técnico(a) de Informática"),
     ],
     "PSICOLOGIA": [
         ("PSICOLOGO", "Psicologo(a)"),
@@ -102,13 +102,13 @@ CARGO_CHOICES_BY_DEPARTMENT = {
         ("AUX_COZINHA", "Aux. de Cozinha"),
     ],
     "MANUTENCAO": [
-        ("SERVICOS_GERAIS", "Servicos Gerais"),
+        ("SERVICOS_GERAIS", "Serviços Gerais"),
     ],
     "ESTAGIO": [
         ("JOVEM_APRENDIZ", "Jovem-Aprendiz"),
     ],
     "MONITORIA": [
-        ("MONITOR_PATIO", "Monitor(a) de Patio"),
+        ("MONITOR_PATIO", "Monitor(a) de Pátio"),
     ],
     "SECRETARIA": [
         ("SECRETARIO", "Secretario(a)"),
@@ -118,28 +118,28 @@ CARGO_CHOICES_BY_DEPARTMENT = {
         ("COORD_STAI", "Coordenador de Stai"),
         ("CONSULTOR_TI", "Consultor(a) de T.I"),
         ("CONSULTOR_NEGOCIOS", "Consultor(a) de Negocios"),
-        ("TEC_LAB_INOVACAO", "Tec. de Lab. de Inovacao"),
+        ("TEC_LAB_INOVACAO", "Tec. de Lab. de Inovação"),
     ],
     "COORDENACAO_PEDAGOGICA": [
-        ("COORD_PEDAGOGICO", "Coordenador(a) Pedagogico(a)"),
-        ("COORD_TECNICO", "Coordenador(a) Tecnico(a)"),
-        ("ASSISTENTE_COORDENACAO", "Assistente de coordenacao"),
-        ("TECNICO_EDUCACIONAL", "Tecnico(a) Adm. Educacional"),
+        ("COORD_PEDAGOGICO", "Coordenador(a) Pedagógico(a)"),
+        ("COORD_TECNICO", "Coordenador(a) Técnico(a)"),
+        ("ASSISTENTE_COORDENACAO", "Assistente de coordenação"),
+        ("TECNICO_EDUCACIONAL", "Técnico(a) Adm. Educacional"),
         ("ASSISTENTE_EDUCACIONAL", "Assistente educacional"),
     ],
     "COORDENACAO_TECNICA": [
-        ("COORD_TECNICO", "Coordenador(a) Tecnico(a)"),
-        ("ASSISTENTE_COORDENACAO", "Assistente de coordenacao"),
-        ("TECNICO_EDUCACIONAL", "Tecnico(a) Adm. Educacional"),
+        ("COORD_TECNICO", "Coordenador(a) Técnico(a)"),
+        ("ASSISTENTE_COORDENACAO", "Assistente de coordenação"),
+        ("TECNICO_EDUCACIONAL", "Técnico(a) Adm. Educacional"),
         ("ASSISTENTE_EDUCACIONAL", "Assistente educacional"),
     ],
     "BIBLIOTECA": [
-        ("BIBLIOTECARIO", "Bibliotecario(a)"),
+        ("BIBLIOTECARIO", "Bibliotecário(a)"),
         ("AUX_BIBLIOTECA", "Aux. de Biblioteca"),
     ],
     "LABORATORIOS": [
-        ("TECNICO_LABORATORIO", "Tecnico(a) de Laboratorio"),
-        ("MONITOR_LABORATORIO", "Monitor(a) de Laboratorio"),
+        ("TECNICO_LABORATORIO", "Técnico(a) de Laboratório"),
+        ("MONITOR_LABORATORIO", "Monitor(a) de Laboratório"),
     ],
     "DOCENCIA": [
         ("HORISTA", "Professor Horista"),
@@ -191,7 +191,7 @@ TICKET_STATUS = [
     ("IN_PROGRESS", "Em tratativa"),
     ("FORWARDED", "Encaminhado"),
     ("CLOSED", "Encerrado"),
-    ("DONE", "Concluido"),
+    ("DONE", "Concluído"),
 ]
 
 
@@ -203,8 +203,8 @@ TICKET_URGENCY = [
 
 
 COMMENT_KIND = [
-    ("COMMENT", "Comentario"),
-    ("STATUS", "Mudanca de status"),
+    ("COMMENT", "Comentário"),
+    ("STATUS", "Mudança de status"),
     ("TRANSFER", "Transferencia"),
     ("REOPEN", "Reabertura"),
 ]
@@ -215,9 +215,9 @@ class UserManager(BaseUserManager):
 
     def _create_user(self, matricula, email, password, **extra_fields):
         if not matricula:
-            raise ValueError("A matricula e obrigatoria.")
+            raise ValueError("A matrícula é obrigatória.")
         if not email:
-            raise ValueError("O e-mail e obrigatorio.")
+            raise ValueError("O e-mail é obrigatório.")
         email = self.normalize_email(email)
         user = self.model(matricula=matricula, email=email, **extra_fields)
         user.set_password(password)
@@ -272,25 +272,25 @@ class User(AbstractUser):
 
         if self.vinculo == "ADMINISTRATIVO":
             if not self.area:
-                raise ValidationError({"area": "Informe a area do funcionario administrativo."})
+                raise ValidationError({"area": "Informe a área do funcionário administrativo."})
             if not self.department:
-                raise ValidationError({"department": "Informe o departamento do funcionario administrativo."})
+                raise ValidationError({"department": "Informe o departamento do funcionário administrativo."})
             allowed_departments = {code for code, _label in DEPARTMENTS_BY_AREA.get(self.area, [])}
             if self.department not in allowed_departments:
-                raise ValidationError({"department": "Departamento invalido para a area selecionada."})
+                raise ValidationError({"department": "Departamento inválido para a área selecionada."})
             allowed_cargos = {code for code, _label in CARGO_CHOICES_BY_DEPARTMENT.get(self.department, [])}
             if self.cargo not in allowed_cargos:
-                raise ValidationError({"cargo": "Cargo invalido para o departamento selecionado."})
+                raise ValidationError({"cargo": "Cargo inválido para o departamento selecionado."})
             return
 
-        raise ValidationError({"vinculo": "Vinculo invalido."})
+        raise ValidationError({"vinculo": "Vínculo inválido."})
 
     @property
     def is_admin_role(self):
         return self.cargo in ADMIN_CARGOS
 
     def __str__(self):
-        area = self.get_area_display() if self.area else "Sem area"
+        area = self.get_area_display() if self.area else "Sem área"
         department = self.get_department_display() if self.department else "Sem departamento"
         return f"{self.full_name} ({self.matricula}) - {area} / {department} / {self.get_cargo_display()}"
 
@@ -441,7 +441,7 @@ class TicketEvent(models.Model):
 
 class ChangeLog(models.Model):
     ENTITY_CHOICES = [
-        ("USER", "Usuario"),
+        ("USER", "Usuário"),
         ("ANNOUNCEMENT", "Comunicado"),
     ]
 

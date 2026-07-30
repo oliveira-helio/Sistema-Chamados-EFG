@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
@@ -30,21 +30,21 @@
         <option value="">Todos os departamentos</option>
         <option value="DIRETORIA" {% if department == "DIRETORIA" %}selected{% endif %}>Diretoria</option>
         <option value="VICE_DIRETORIA" {% if department == "VICE_DIRETORIA" %}selected{% endif %}>Vice-diretoria</option>
-        <option value="TI" {% if department == "TI" %}selected{% endif %}>Tecnologia da Informacao</option>
+        <option value="TI" {% if department == "TI" %}selected{% endif %}>Tecnologia da Informação</option>
         <option value="PSICOLOGIA" {% if department == "PSICOLOGIA" %}selected{% endif %}>Psicologia</option>
-        <option value="SEGURANCA" {% if department == "SEGURANCA" %}selected{% endif %}>Seguranca</option>
+        <option value="SEGURANCA" {% if department == "SEGURANCA" %}selected{% endif %}>Segurança</option>
         <option value="ZELADORIA" {% if department == "ZELADORIA" %}selected{% endif %}>Zeladoria</option>
         <option value="COZINHA" {% if department == "COZINHA" %}selected{% endif %}>Cozinha</option>
-        <option value="MANUTENCAO" {% if department == "MANUTENCAO" %}selected{% endif %}>Manutencao</option>
-        <option value="ESTAGIO" {% if department == "ESTAGIO" %}selected{% endif %}>Estagio</option>
+        <option value="MANUTENCAO" {% if department == "MANUTENCAO" %}selected{% endif %}>Manutenção</option>
+        <option value="ESTAGIO" {% if department == "ESTAGIO" %}selected{% endif %}>Estágio</option>
         <option value="MONITORIA" {% if department == "MONITORIA" %}selected{% endif %}>Monitoria</option>
         <option value="SECRETARIA" {% if department == "SECRETARIA" %}selected{% endif %}>Secretaria</option>
         <option value="STAI" {% if department == "STAI" %}selected{% endif %}>Stai</option>
-        <option value="COORDENACAO_PEDAGOGICA" {% if department == "COORDENACAO_PEDAGOGICA" %}selected{% endif %}>Coordenacao pedagogica</option>
-        <option value="COORDENACAO_TECNICA" {% if department == "COORDENACAO_TECNICA" %}selected{% endif %}>Coordenacao tecnica</option>
+        <option value="COORDENACAO_PEDAGOGICA" {% if department == "COORDENACAO_PEDAGOGICA" %}selected{% endif %}>Coordenação pedagógica</option>
+        <option value="COORDENACAO_TECNICA" {% if department == "COORDENACAO_TECNICA" %}selected{% endif %}>Coordenação técnica</option>
         <option value="BIBLIOTECA" {% if department == "BIBLIOTECA" %}selected{% endif %}>Biblioteca</option>
-        <option value="LABORATORIOS" {% if department == "LABORATORIOS" %}selected{% endif %}>Laboratorios</option>
-        <option value="DOCENCIA" {% if department == "DOCENCIA" %}selected{% endif %}>Docencia</option>
+        <option value="LABORATORIOS" {% if department == "LABORATORIOS" %}selected{% endif %}>Laboratórios</option>
+        <option value="DOCENCIA" {% if department == "DOCENCIA" %}selected{% endif %}>Docência</option>
       </select>
       <button class="primary" type="submit">Filtrar</button>
     </div>

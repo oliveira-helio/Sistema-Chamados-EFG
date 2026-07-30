@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
@@ -12,7 +12,7 @@
     {{ form.non_field_errors }}
     {% if form.errors %}
       <div class="alert error">
-        <strong>Nao foi possivel salvar o usuario.</strong>
+        <strong>Não foi possível salvar o usuário.</strong>
         <div>Confira os campos destacados abaixo.</div>
       </div>
     {% endif %}
@@ -20,11 +20,11 @@
     {{ form.full_name.errors }}
     <label>E-mail {{ form.email }}</label>
     {{ form.email.errors }}
-    <label>Matricula {{ form.matricula }}</label>
+    <label>Matrícula {{ form.matricula }}</label>
     {{ form.matricula.errors }}
-    <label>Vinculo {{ form.vinculo }}</label>
+    <label>Vínculo {{ form.vinculo }}</label>
     {{ form.vinculo.errors }}
-    <label>Area {{ form.area }}</label>
+    <label>Área {{ form.area }}</label>
     {{ form.area.errors }}
     <label>Departamento {{ form.department }}</label>
     {{ form.department.errors }}
@@ -38,7 +38,7 @@
       {{ form.password2.errors }}
     {% endif %}
 
-    <button class="primary" type="submit">Salvar usuario</button>
+    <button class="primary" type="submit">Salvar usuário</button>
   </form>
 </section>
 
@@ -57,30 +57,30 @@
       { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
       { value: "SECRETARIA", label: "Secretaria" },
       { value: "STAI", label: "Stai" },
-      { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
+      { value: "COORDENACAO_PEDAGOGICA", label: "Coordenação pedagógica" },
     ];
 
     const departmentsByArea = {
       DIRETORIA: [{ value: "DIRETORIA", label: "Diretoria" }],
       VICE_DIRETORIA: [
         { value: "VICE_DIRETORIA", label: "Vice-diretoria" },
-        { value: "TI", label: "Tecnologia da Informacao" },
+        { value: "TI", label: "Tecnologia da Informação" },
         { value: "PSICOLOGIA", label: "Psicologia" },
-        { value: "SEGURANCA", label: "Seguranca" },
+        { value: "SEGURANCA", label: "Segurança" },
         { value: "ZELADORIA", label: "Zeladoria" },
         { value: "COZINHA", label: "Cozinha" },
-        { value: "MANUTENCAO", label: "Manutencao" },
-        { value: "ESTAGIO", label: "Estagio" },
+        { value: "MANUTENCAO", label: "Manutenção" },
+        { value: "ESTAGIO", label: "Estágio" },
         { value: "MONITORIA", label: "Monitoria" },
       ],
       SECRETARIA: [{ value: "SECRETARIA", label: "Secretaria" }],
       STAI: [{ value: "STAI", label: "Stai" }],
       COORDENACAO_PEDAGOGICA: [
-        { value: "COORDENACAO_PEDAGOGICA", label: "Coordenacao pedagogica" },
-        { value: "COORDENACAO_TECNICA", label: "Coordenacao tecnica" },
+        { value: "COORDENACAO_PEDAGOGICA", label: "Coordenação pedagógica" },
+        { value: "COORDENACAO_TECNICA", label: "Coordenação técnica" },
         { value: "BIBLIOTECA", label: "Biblioteca" },
-        { value: "LABORATORIOS", label: "Laboratorios" },
-        { value: "DOCENCIA", label: "Docencia" },
+        { value: "LABORATORIOS", label: "Laboratórios" },
+        { value: "DOCENCIA", label: "Docência" },
       ],
     };
 
@@ -141,7 +141,7 @@
       if (vinculoField.value === "PROFESSOR") {
         areaField.value = "COORDENACAO_PEDAGOGICA";
         areaField.disabled = true;
-        departmentField.innerHTML = '<option value="DOCENCIA">Docencia</option>';
+        departmentField.innerHTML = '<option value="DOCENCIA">Docência</option>';
         departmentField.value = "DOCENCIA";
         departmentField.disabled = true;
       } else {

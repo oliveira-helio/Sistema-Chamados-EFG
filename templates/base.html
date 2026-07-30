@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -24,8 +24,8 @@
           <a href="{% url 'ticket_list' %}">Chamados</a>
           <a href="{% url 'ticket_create' %}">Abrir chamado</a>
           {% if user.is_superuser or user.is_staff %}
-            <a href="{% url 'user_management' %}">Usuarios</a>
-            <a href="{% url 'announcement_management' %}">Anuncios</a>
+            <a href="{% url 'user_management' %}">Usuários</a>
+            <a href="{% url 'announcement_management' %}">Anúncios</a>
           {% endif %}
           <a href="{% url 'logout' %}">Sair</a>
         {% else %}

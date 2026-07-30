@@ -16,7 +16,7 @@ from .models import (
 
 
 class LoginForm(AuthenticationForm):
-    username = forms.CharField(label="Matricula ou e-mail", widget=forms.TextInput(attrs={"placeholder": "Matricula ou e-mail"}))
+    username = forms.CharField(label="Matrícula ou e-mail", widget=forms.TextInput(attrs={"placeholder": "Matrícula ou e-mail"}))
     password = forms.CharField(label="Senha", widget=forms.PasswordInput(attrs={"placeholder": "Senha"}))
 
 
@@ -78,12 +78,12 @@ class UserCreateForm(UserCreationForm):
             department = self.instance.department or None
 
         self.fields["vinculo"].choices = [("", "Selecione o vinculo")] + list(User._meta.get_field("vinculo").choices)
-        self.fields["area"].choices = [("", "Selecione a area")] + admin_area_choices()
+        self.fields["area"].choices = [("", "Selecione a área")] + admin_area_choices()
         self.fields["area"].required = True
         self.fields["department"].required = True
         self.fields["cargo"].required = True
         if vinculo == "PROFESSOR":
-            self.fields["department"].choices = [("DOCENCIA", "Docencia")]
+            self.fields["department"].choices = [("DOCENCIA", "Docência")]
         else:
             self.fields["department"].choices = department_choices_for_area(area) if area else [("", "Selecione o departamento")]
         self.fields["cargo"].choices = self._cargo_choices_for(vinculo, department)
@@ -117,15 +117,15 @@ class UserCreateForm(UserCreationForm):
                 raise forms.ValidationError({"cargo": "Professor deve ser Horista ou Mensalista."})
         elif vinculo == "ADMINISTRATIVO":
             if not area:
-                raise forms.ValidationError({"area": "Informe a area do funcionario administrativo."})
+                raise forms.ValidationError({"area": "Informe a área do funcionário administrativo."})
             if not department:
-                raise forms.ValidationError({"department": "Informe o departamento do funcionario administrativo."})
+                raise forms.ValidationError({"department": "Informe o departamento do funcionário administrativo."})
             allowed_departments = {code for code, _label in DEPARTMENTS_BY_AREA.get(area, [])}
             if department not in allowed_departments:
-                raise forms.ValidationError({"department": "Departamento invalido para a area selecionada."})
+                raise forms.ValidationError({"department": "Departamento inválido para a área selecionada."})
             allowed = {code for code, _label in CARGO_CHOICES_BY_DEPARTMENT.get(department, [])}
             if cargo not in allowed:
-                raise forms.ValidationError({"cargo": "Cargo invalido para o departamento selecionado."})
+                raise forms.ValidationError({"cargo": "Cargo inválido para o departamento selecionado."})
         else:
             raise forms.ValidationError({"vinculo": "Selecione um vinculo valido."})
 
@@ -137,7 +137,7 @@ class UserCreateForm(UserCreationForm):
         widgets = {
             "full_name": forms.TextInput(attrs={"placeholder": "Nome completo"}),
             "email": forms.EmailInput(attrs={"placeholder": "E-mail institucional"}),
-            "matricula": forms.TextInput(attrs={"placeholder": "Matricula"}),
+            "matricula": forms.TextInput(attrs={"placeholder": "Matrícula"}),
         }
 
 
@@ -168,12 +168,12 @@ class UserUpdateForm(forms.ModelForm):
             department = self.instance.department or None
 
         self.fields["vinculo"].choices = [("", "Selecione o vinculo")] + list(User._meta.get_field("vinculo").choices)
-        self.fields["area"].choices = [("", "Selecione a area")] + admin_area_choices()
+        self.fields["area"].choices = [("", "Selecione a área")] + admin_area_choices()
         self.fields["area"].required = True
         self.fields["department"].required = True
         self.fields["cargo"].required = True
         if vinculo == "PROFESSOR":
-            self.fields["department"].choices = [("DOCENCIA", "Docencia")]
+            self.fields["department"].choices = [("DOCENCIA", "Docência")]
         else:
             self.fields["department"].choices = department_choices_for_area(area) if area else [("", "Selecione o departamento")]
         self.fields["cargo"].choices = self._cargo_choices_for(vinculo, department)
@@ -205,15 +205,15 @@ class UserUpdateForm(forms.ModelForm):
                 raise forms.ValidationError({"cargo": "Professor deve ser Horista ou Mensalista."})
         elif vinculo == "ADMINISTRATIVO":
             if not area:
-                raise forms.ValidationError({"area": "Informe a area do funcionario administrativo."})
+                raise forms.ValidationError({"area": "Informe a área do funcionário administrativo."})
             if not department:
-                raise forms.ValidationError({"department": "Informe o departamento do funcionario administrativo."})
+                raise forms.ValidationError({"department": "Informe o departamento do funcionário administrativo."})
             allowed_departments = {code for code, _label in DEPARTMENTS_BY_AREA.get(area, [])}
             if department not in allowed_departments:
-                raise forms.ValidationError({"department": "Departamento invalido para a area selecionada."})
+                raise forms.ValidationError({"department": "Departamento inválido para a área selecionada."})
             allowed = {code for code, _label in CARGO_CHOICES_BY_DEPARTMENT.get(department, [])}
             if cargo not in allowed:
-                raise forms.ValidationError({"cargo": "Cargo invalido para o departamento selecionado."})
+                raise forms.ValidationError({"cargo": "Cargo inválido para o departamento selecionado."})
         else:
             raise forms.ValidationError({"vinculo": "Selecione um vinculo valido."})
 
@@ -225,7 +225,7 @@ class UserUpdateForm(forms.ModelForm):
         widgets = {
             "full_name": forms.TextInput(attrs={"placeholder": "Nome completo"}),
             "email": forms.EmailInput(attrs={"placeholder": "E-mail institucional"}),
-            "matricula": forms.TextInput(attrs={"placeholder": "Matricula"}),
+            "matricula": forms.TextInput(attrs={"placeholder": "Matrícula"}),
         }
 
 
@@ -237,7 +237,7 @@ class TicketCreateForm(forms.ModelForm):
         fields = ["area", "department", "category", "title", "description", "urgency"]
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Assunto resumido"}),
-            "description": forms.Textarea(attrs={"rows": 6, "placeholder": "Descreva a demanda com o maximo de detalhes"}),
+            "description": forms.Textarea(attrs={"rows": 6, "placeholder": "Descreva a demanda com o máximo de detalhes"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -276,14 +276,14 @@ class TicketEventForm(forms.ModelForm):
         model = TicketEvent
         fields = ["message"]
         widgets = {
-            "message": forms.Textarea(attrs={"rows": 4, "placeholder": "Escreva um comentario ou tratativa"}),
+            "message": forms.Textarea(attrs={"rows": 4, "placeholder": "Escreva um comentário ou tratativa"}),
         }
 
 
 class TicketStatusForm(forms.Form):
     status = forms.ChoiceField(choices=[("", "Selecionar status")] + Ticket._meta.get_field("status").choices)
     department = forms.ChoiceField(choices=[("", "Selecionar departamento")] + DEPARTMENT_CHOICES, required=False)
-    message = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Motivo da mudanca"}))
+    message = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 3, "placeholder": "Motivo da mudança"}))
 
     def __init__(self, *args, **kwargs):
         status_choices = kwargs.pop("status_choices", None)
@@ -303,8 +303,8 @@ class TicketStatusForm(forms.Form):
 class TicketAssignmentForm(forms.Form):
     assigned_to = forms.ModelChoiceField(
         queryset=User.objects.none(),
-        empty_label="Selecionar responsavel",
-        label="Responsavel",
+        empty_label="Selecionar responsável",
+        label="Responsável",
     )
 
     def __init__(self, *args, **kwargs):
@@ -315,6 +315,22 @@ class TicketAssignmentForm(forms.Form):
 
 class TicketAttachmentForm(forms.Form):
     files = MultipleFileField(required=False, label="Anexos")
+
+
+class BulkUserUploadForm(forms.Form):
+    file = forms.FileField(
+        label="Arquivo CSV ou TXT",
+        help_text="Envie um arquivo .csv ou .txt com cabeçalho e uma pessoa por linha.",
+    )
+
+    def clean_file(self):
+        uploaded_file = self.cleaned_data["file"]
+        name = uploaded_file.name.lower()
+        if not (name.endswith(".csv") or name.endswith(".txt")):
+            raise forms.ValidationError("Envie um arquivo no formato .csv ou .txt.")
+        if uploaded_file.size > 2 * 1024 * 1024:
+            raise forms.ValidationError("O arquivo deve ter no máximo 2 MB.")
+        return uploaded_file
 
 
 class AnnouncementForm(forms.ModelForm):

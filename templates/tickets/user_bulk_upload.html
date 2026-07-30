@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<section class="section">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Usuários</p>
+      <h1>Importar colaboradores</h1>
+    </div>
+    <a class="link-button" href="{% url 'user_management' %}">Voltar para usuários</a>
+  </div>
+
+  <form class="card form-stack" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <label>{{ form.file.label }} {{ form.file }}</label>
+    {{ form.file.errors }}
+    <p class="field-help">
+      Use o <a href="{% static 'modelos/importacao_colaboradores_modelo.csv' %}" download>arquivo modelo de importação</a>
+      ou o arquivo em <strong>docs/importacao_colaboradores_modelo.csv</strong>.
+      O importador aceita CSV ou TXT separado por ponto e vírgula, vírgula ou tabulação.
+    </p>
+    <button class="primary" type="submit">Importar colaboradores</button>
+  </form>
+</section>
+
+<section class="section">
+  <article class="card">
+    <h2>Campos do arquivo</h2>
+    <p>Campos obrigatórios: matrícula, nome_completo, email, vínculo, área, departamento, cargo e senha.</p>
+    <p>Campos opcionais: telefone e ativo.</p>
+    <p class="meta">Use os códigos internos, por exemplo: ADMINISTRATIVO, PROFESSOR, COORDENACAO_PEDAGOGICA, DOCENCIA, HORISTA.</p>
+  </article>
+</section>
+
+{% if import_errors %}
+  <section class="section">
+    <div class="alert error">
+      <strong>Foram encontrados erros no arquivo.</strong>
+      <div>{{ preview_count }} linha(s) lida(s). Nenhum colaborador foi importado.</div>
+    </div>
+    <div class="card">
+      <h2>Erros encontrados</h2>
+      <ul class="feature-list">
+        {% for error in import_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

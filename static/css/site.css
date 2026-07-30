@@ -499,6 +499,13 @@ button:hover,
 margin-bottom: 20px;
 }
 
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .stack {
   display: grid;
   gap: 14px;

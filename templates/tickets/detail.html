@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block content %}
 <section class="section">
   <div class="section-head">
@@ -18,8 +18,8 @@
 
   {% if ticket.is_overdue %}
     <div class="alert error">
-      <strong>Este chamado esta em atraso.</strong>
-      <div>O prazo estimado foi ultrapassado e o responsavel deve priorizar a tratativa.</div>
+      <strong>Este chamado está em atraso.</strong>
+      <div>O prazo estimado foi ultrapassado e o responsável deve priorizar a tratativa.</div>
     </div>
   {% endif %}
 
@@ -28,14 +28,14 @@
       <p><strong>Chamado:</strong> {{ ticket.number }}</p>
       <p><strong>Solicitante:</strong> {{ ticket.requester.full_name }}</p>
       <p>
-        <strong>Responsavel:</strong>
+        <strong>Responsável:</strong>
         {% if ticket.assigned_to %}
           {{ ticket.assigned_to.full_name }} - {{ ticket.assigned_to.get_cargo_display }}
         {% else %}
-          Nao definido
+          Não definido
         {% endif %}
       </p>
-      <p><strong>Area de destino:</strong> {{ ticket.get_area_display }}</p>
+      <p><strong>Área de destino:</strong> {{ ticket.get_area_display }}</p>
       <p><strong>Departamento de destino:</strong> {{ ticket.get_department_display }}</p>
       <p><strong>Aberto em:</strong> {{ ticket.opened_at|date:"d/m/Y - H:i" }}</p>
       <p><strong>Prazo:</strong> {{ ticket.deadline_label }}</p>
@@ -61,7 +61,7 @@
 
     <article class="card event-card">
       <div class="ticket-head">
-        <!-- <strong>Descricao</strong> -->
+        <!-- <strong>Descrição</strong> -->
         <span class="meta ">Aberto em {{ ticket.opened_at|date:"d/m/Y H:i" }}</span>
       </div>
       <p>{{ ticket.description|linebreaksbr }}</p>
@@ -72,14 +72,14 @@
   <hr />
   <div class="time-line">
     <div class="section-head">
-      <h2>Historico</h2>
+      <h2>Histórico</h2>
     </div>
 
     {% for event in ticket.events.all %}
       {% if event.kind == "COMMENT" %}
       <article class="card event-card">
         <div class="ticket-head">
-          <strong>Comentario</strong>
+          <strong>Comentário</strong>
           <span class="meta">{{ event.created_at|date:"d/m/Y H:i" }}</span>
         </div>
         <p>{{ event.message|linebreaksbr }}</p>
@@ -104,19 +104,19 @@
     <div class="status_assignedto-container">
       {% if can_manage_responsible %}
       <article class="card">
-        <h2>Responsavel</h2>
+        <h2>Responsável</h2>
         <form method="post" class="form-stack">
           {% csrf_token %}
           <input type="hidden" name="action" value="assignment">
           {{ assignment_form.assigned_to }}
           {{ assignment_form.assigned_to.errors }}
-          <button class="primary" type="submit">Atualizar responsavel</button>
+          <button class="primary" type="submit">Atualizar responsável</button>
         </form>
       </article>
       {% endif %}
       
       <article class="card">
-        <h2>Mudanca de status</h2>
+        <h2>Mudança de status</h2>
         <form method="post" class="form-stack" id="status-form">
           {% csrf_token %}
           <input type="hidden" name="action" value="status">
@@ -153,13 +153,13 @@
 
 <dialog class="status-modal" id="status-modal">
   <form method="dialog" class="status-modal__panel" id="status-modal-form">
-    <h3>Motivo da mudanca de status</h3>
-    <p class="meta">Digite o motivo para registrar no historico.</p>
+    <h3>Motivo da mudança de status</h3>
+    <p class="meta">Digite o motivo para registrar no histórico.</p>
     <div class="status-modal__field" id="status-modal-department-field" hidden>
       <label for="id_department">Departamento de destino</label>
       {{ status_form.department }}
     </div>
-    <textarea id="status-modal-message" rows="5" placeholder="Escreva o motivo da mudanca"></textarea>
+    <textarea id="status-modal-message" rows="5" placeholder="Escreva o motivo da mudança"></textarea>
     <div class="status-modal__actions">
       <button type="submit" value="cancel">Cancelar</button>
       <button class="primary" type="submit" value="confirm">Salvar e atualizar</button>
@@ -206,7 +206,7 @@
       if (typeof modal.showModal === "function") {
         modal.showModal();
       } else {
-        const reason = window.prompt("Motivo da mudanca de status", hiddenMessage.value || "");
+        const reason = window.prompt("Motivo da mudança de status", hiddenMessage.value || "");
         if (reason === null) return;
         hiddenMessage.value = reason;
         submitting = true;
