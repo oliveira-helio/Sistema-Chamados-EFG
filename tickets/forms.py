@@ -257,7 +257,7 @@ class UserUpdateForm(forms.ModelForm):
 
 class FirstAccessPasswordChangeForm(PasswordChangeForm):
     def clean_new_password2(self):
-        password = super().clean_new_password2()
+        password = self.cleaned_data.get("new_password2")
         old_password = self.cleaned_data.get("old_password")
         if password and old_password and password == old_password:
             raise forms.ValidationError("A nova senha deve ser diferente da senha atual.")
