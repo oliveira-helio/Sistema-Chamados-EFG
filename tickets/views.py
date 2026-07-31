@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
 from django.http import HttpResponseForbidden
@@ -29,6 +30,7 @@ from .forms import (
 from .models import (
     Announcement,
     AnnouncementImage,
+    ADMIN_CARGOS,
     CARGO_CHOICES_BY_DEPARTMENT,
     ChangeLog,
     area_for_department,
@@ -591,7 +593,9 @@ def _validate_user_import_rows(rows):
             is_active=is_active,
             first_access=first_access,
         )
-        user.set_password(row["password"])
+        # Evita hashear a senha durante a validação de preview; a senha real é
+        # criptografada uma única vez no momento de salvar a importação.
+        user.password = "temporary-validation-password"
         try:
             user.full_clean()
         except Exception as exc:
@@ -647,9 +651,27 @@ def user_bulk_upload(request):
         if not import_errors:
             with transaction.atomic():
                 for user, password in users_to_create:
-                    user.set_password(password)
-                    user.save()
-                    _log_change("USER", user.pk, "CREATE", request.user, after_data=serialize_user_for_audit(user))
+                    if user.first_access:
+                        user.password = make_password(password, hasher="md5")
+                    else:
+                        user.set_password(password)
+                    user.is_staff = user.cargo in ADMIN_CARGOS or user.is_superuser
+                created_users = User.objects.bulk_create([user for user, _password in users_to_create])
+                missing_ids = [user.matricula for user in created_users if not user.pk]
+                if missing_ids:
+                    created_users = list(User.objects.filter(matricula__in=missing_ids)) + [user for user in created_users if user.pk]
+                ChangeLog.objects.bulk_create(
+                    [
+                        ChangeLog(
+                            entity_type="USER",
+                            entity_id=user.pk,
+                            action="CREATE",
+                            actor=request.user,
+                            after_data=serialize_user_for_audit(user),
+                        )
+                        for user in created_users
+                    ]
+                )
             messages.success(request, f"{len(users_to_create)} colaborador(es) importado(s) com sucesso.")
             return redirect("user_management")
 
