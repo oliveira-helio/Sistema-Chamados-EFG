@@ -494,6 +494,8 @@ def _parse_bool(value):
 
 
 def _normalize_import_value(field, value):
+    if field == "password":
+        return "" if value is None else str(value).strip()
     value = (value or "").strip()
     if field in USER_IMPORT_CODE_FIELDS:
         return value.upper()
@@ -580,6 +582,11 @@ def _validate_user_import_rows(rows):
         except ValueError as exc:
             errors.append(f"Linha {line_number}: campo primeiro_acesso inválido. {exc}")
             first_access = True
+        if len(row.get("password", "")) < 6:
+            errors.append(
+                f"Linha {line_number}: senha deve ter ao menos 6 caracteres. "
+                "Se a senha começa com zero, confira se o CSV preservou os zeros à esquerda."
+            )
 
         user = User(
             matricula=row.get("matricula", ""),

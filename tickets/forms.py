@@ -109,6 +109,12 @@ class UserCreateForm(UserCreationForm):
             return
         return super().validate_password_for_user(user, password_field_name=password_field_name)
 
+    def clean_password2(self):
+        password = self.cleaned_data.get("password2")
+        if self.cleaned_data.get("first_access") and password and len(password) < 6:
+            raise forms.ValidationError("A senha temporária deve ter ao menos 6 caracteres.")
+        return password
+
     def clean(self):
         cleaned = super().clean()
         vinculo = cleaned.get("vinculo")
