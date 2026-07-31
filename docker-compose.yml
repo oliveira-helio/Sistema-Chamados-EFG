@@ -8,11 +8,8 @@ services:
     ports:
       - "8000:8000"
     restart: unless-stopped
-    environment:
-      DEBUG: "1"
-      SECRET_KEY: "change-me"
-      ALLOWED_HOSTS: "*"
-      DATABASE_URL: "postgresql://chamados:chamados@db:5432/chamados"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
@@ -39,11 +36,9 @@ services:
     volumes:
       - .:/app
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      DEBUG: "1"
-      SECRET_KEY: "change-me"
-      ALLOWED_HOSTS: "*"
-      DATABASE_URL: "postgresql://chamados:chamados@db:5432/chamados"
       SCHEDULER_INTERVAL_SECONDS: "60"
     depends_on:
       db:
