@@ -6,7 +6,7 @@ services:
       - .:/app
       - media_data:/app/media
     ports:
-      - "8000:8000"
+      - "80:8000"
     restart: unless-stopped
     env_file:
       - .env
