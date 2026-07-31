@@ -7,19 +7,19 @@ from .models import Announcement, ChangeLog, Ticket, TicketAttachment, TicketCat
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     model = User
-    list_display = ("matricula", "full_name", "email", "vinculo", "area", "department", "cargo", "is_staff")
+    list_display = ("matricula", "full_name", "email", "vinculo", "area", "department", "cargo", "first_access", "is_staff")
     search_fields = ("matricula", "full_name", "email")
     ordering = ("full_name",)
     fieldsets = (
         (None, {"fields": ("matricula", "email", "password")}),
-        ("Dados pessoais", {"fields": ("full_name", "vinculo", "area", "department", "cargo", "phone")}),
+        ("Dados pessoais", {"fields": ("full_name", "vinculo", "area", "department", "cargo", "phone", "first_access")}),
         ("Permissoes", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Datas", {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("matricula", "email", "full_name", "vinculo", "area", "department", "cargo", "password1", "password2"),
+            "fields": ("matricula", "email", "full_name", "vinculo", "area", "department", "cargo", "first_access", "password1", "password2"),
         }),
     )
 

@@ -41,6 +41,9 @@
         </div>
         <p>{{ user.matricula }} | {{ user.email }}</p>
         <p>{{ user.get_vinculo_display }} - {{ user.get_area_display|default:"Sem área" }} - {{ user.get_department_display|default:"Sem departamento" }} - {{ user.get_cargo_display }}</p>
+        {% if user.first_access %}
+          <p class="meta">Primeiro acesso pendente: o usuário será obrigado a trocar a senha no próximo login.</p>
+        {% endif %}
       </article>
     {% empty %}
       <div class="card muted">Nenhum usuário encontrado.</div>

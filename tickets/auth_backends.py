@@ -1,6 +1,8 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
 
+from .models import normalize_matricula
+
 
 User = get_user_model()
 
@@ -16,11 +18,15 @@ class EmailOrMatriculaBackend(ModelBackend):
             user = User.objects.get(email__iexact=username)
         except User.DoesNotExist:
             try:
-                user = User.objects.get(matricula__iexact=username)
+                user = User.objects.get(matricula__iexact=normalize_matricula(username))
             except User.DoesNotExist:
-                return None
+                for candidate in User.objects.all():
+                    if normalize_matricula(candidate.matricula) == normalize_matricula(username):
+                        user = candidate
+                        break
+                else:
+                    return None
 
         if user.check_password(password) and self.user_can_authenticate(user):
             return user
         return None
-

@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Q
@@ -15,6 +15,7 @@ from django.db import transaction
 
 from .forms import (
     AnnouncementForm,
+    FirstAccessPasswordChangeForm,
     LoginForm,
     UserAdminForm,
     UserUpdateForm,
@@ -31,6 +32,7 @@ from .models import (
     CARGO_CHOICES_BY_DEPARTMENT,
     ChangeLog,
     area_for_department,
+    normalize_matricula,
     Ticket,
     TicketAttachment,
     TicketEvent,
@@ -119,8 +121,11 @@ def login_view(request):
 
     form = LoginForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
-        login(request, form.get_user())
+        user = form.get_user()
+        login(request, user)
         messages.success(request, "Bem-vindo ao sistema de chamados.")
+        if user.first_access:
+            return redirect("first_access_password_change")
         return redirect("home")
     return render(request, "registration/login.html", {"form": form})
 
@@ -131,6 +136,25 @@ def logout_view(request):
     request.session.flush()
     messages.success(request, "Você saiu do sistema.")
     return redirect("login")
+
+
+@login_required
+def first_access_password_change(request):
+    if not request.user.first_access:
+        return redirect("home")
+
+    form = FirstAccessPasswordChangeForm(request.user, request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        user.first_access = False
+        user.save(update_fields=["first_access", "is_staff"])
+        update_session_auth_hash(request, user)
+        _log_change("USER", user.pk, "FIRST_ACCESS_PASSWORD", user, after_data=serialize_user_for_audit(user))
+        messages.success(request, "Senha alterada com sucesso. Bem-vindo ao sistema de chamados.")
+        return redirect("home")
+    if request.method == "POST" and not form.is_valid():
+        messages.error(request, "Não foi possível alterar a senha. Verifique os campos informados.")
+    return render(request, "registration/first_access_password_change.html", {"form": form})
 
 
 def _visible_tickets_for(user, queryset=None):
@@ -408,9 +432,27 @@ USER_IMPORT_HEADERS = {
     "phone": "phone",
     "ativo": "is_active",
     "is_active": "is_active",
+    "primeiro_acesso": "first_access",
+    "first_access": "first_access",
 }
 
 USER_IMPORT_REQUIRED_FIELDS = ["matricula", "full_name", "email", "vinculo", "area", "department", "cargo", "password"]
+
+USER_IMPORT_FIELD_LABELS = {
+    "matricula": "matrícula",
+    "full_name": "nome_completo",
+    "email": "email",
+    "vinculo": "vínculo",
+    "area": "área",
+    "department": "departamento",
+    "cargo": "cargo",
+    "password": "senha",
+    "phone": "telefone",
+    "is_active": "ativo",
+    "first_access": "primeiro_acesso",
+}
+
+USER_IMPORT_CODE_FIELDS = {"vinculo", "area", "department", "cargo"}
 
 
 def _normalize_header(header):
@@ -449,6 +491,15 @@ def _parse_bool(value):
     raise ValueError("Use sim/não, true/false ou 1/0.")
 
 
+def _normalize_import_value(field, value):
+    value = (value or "").strip()
+    if field in USER_IMPORT_CODE_FIELDS:
+        return value.upper()
+    if field == "email":
+        return value.lower()
+    return value
+
+
 def _read_user_import_rows(uploaded_file):
     text = _decode_uploaded_text(uploaded_file)
     delimiter = _detect_delimiter(text)
@@ -474,13 +525,18 @@ def _read_user_import_rows(uploaded_file):
     for line_number, source_row in enumerate(reader, start=2):
         if not any((value or "").strip() for value in source_row.values()):
             continue
-        row = {target: (source_row.get(source) or "").strip() for source, target in normalized_headers.items()}
+        row = {
+            target: _normalize_import_value(target, source_row.get(source))
+            for source, target in normalized_headers.items()
+        }
         for field in USER_IMPORT_REQUIRED_FIELDS:
             if not row.get(field):
-                errors.append(f"Linha {line_number}: campo obrigatório vazio ({field}).")
+                label = USER_IMPORT_FIELD_LABELS.get(field, field)
+                errors.append(f"Linha {line_number}: campo obrigatório vazio: {label}.")
 
-        matricula = row.get("matricula", "")
-        email = row.get("email", "").lower()
+        matricula = normalize_matricula(row.get("matricula", ""))
+        row["matricula"] = matricula
+        email = row.get("email", "")
         if matricula:
             if matricula in seen_matriculas:
                 errors.append(f"Linha {line_number}: matrícula duplicada no arquivo ({matricula}).")
@@ -499,13 +555,14 @@ def _read_user_import_rows(uploaded_file):
 
 def _validate_user_import_rows(rows):
     errors = []
-    matriculas = [row["matricula"] for _line, row in rows if row.get("matricula")]
+    matriculas = [normalize_matricula(row["matricula"]) for _line, row in rows if row.get("matricula")]
     emails = [row["email"] for _line, row in rows if row.get("email")]
-    existing_matriculas = set(User.objects.filter(matricula__in=matriculas).values_list("matricula", flat=True))
+    existing_matriculas = {normalize_matricula(matricula) for matricula in User.objects.values_list("matricula", flat=True)}
     existing_emails = set(User.objects.filter(email__in=emails).values_list("email", flat=True))
 
     users_to_create = []
     for line_number, row in rows:
+        row["matricula"] = normalize_matricula(row.get("matricula"))
         if row.get("matricula") in existing_matriculas:
             errors.append(f"Linha {line_number}: já existe usuário com esta matrícula.")
         if row.get("email") in existing_emails:
@@ -516,6 +573,11 @@ def _validate_user_import_rows(rows):
         except ValueError as exc:
             errors.append(f"Linha {line_number}: campo ativo inválido. {exc}")
             is_active = True
+        try:
+            first_access = _parse_bool(row.get("first_access", "sim"))
+        except ValueError as exc:
+            errors.append(f"Linha {line_number}: campo primeiro_acesso inválido. {exc}")
+            first_access = True
 
         user = User(
             matricula=row.get("matricula", ""),
@@ -527,14 +589,18 @@ def _validate_user_import_rows(rows):
             cargo=row.get("cargo", ""),
             phone=row.get("phone", ""),
             is_active=is_active,
+            first_access=first_access,
         )
+        user.set_password(row["password"])
         try:
             user.full_clean()
         except Exception as exc:
             if hasattr(exc, "message_dict"):
                 details = []
-                for field_errors in exc.message_dict.values():
-                    details.extend(field_errors)
+                for field, field_errors in exc.message_dict.items():
+                    label = USER_IMPORT_FIELD_LABELS.get(field, field)
+                    for field_error in field_errors:
+                        details.append(f"{label}: {field_error}")
                 errors.append(f"Linha {line_number}: {'; '.join(details)}")
             else:
                 errors.append(f"Linha {line_number}: {exc}")
@@ -627,6 +693,8 @@ def user_change_password(request, pk):
     form = SetPasswordForm(user, request.POST or None)
     if request.method == "POST" and form.is_valid():
         form.save()
+        user.first_access = True
+        user.save(update_fields=["first_access", "is_staff"])
         _log_change("USER", user.pk, "PASSWORD", request.user, after_data=serialize_user_for_audit(user))
         messages.success(request, "Senha alterada com sucesso.")
         return redirect("user_management")

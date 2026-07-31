@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 
 from .models import (
     AREA_CHOICES,
@@ -12,6 +12,7 @@ from .models import (
     TicketEvent,
     User,
     cargos_for_department,
+    normalize_matricula,
 )
 
 
@@ -103,6 +104,11 @@ class UserCreateForm(UserCreationForm):
             return cargos_for_department(department)
         return [("", "Selecione o cargo")] + all_admin_cargos()
 
+    def validate_password_for_user(self, user, password_field_name="password2"):
+        if self.cleaned_data.get("first_access"):
+            return
+        return super().validate_password_for_user(user, password_field_name=password_field_name)
+
     def clean(self):
         cleaned = super().clean()
         vinculo = cleaned.get("vinculo")
@@ -131,13 +137,20 @@ class UserCreateForm(UserCreationForm):
 
         return cleaned
 
+    def clean_matricula(self):
+        return normalize_matricula(self.cleaned_data["matricula"])
+
     class Meta:
         model = User
-        fields = ["full_name", "email", "matricula", "vinculo", "area", "department", "cargo"]
+        fields = ["full_name", "email", "matricula", "vinculo", "area", "department", "cargo", "first_access"]
         widgets = {
             "full_name": forms.TextInput(attrs={"placeholder": "Nome completo"}),
             "email": forms.EmailInput(attrs={"placeholder": "E-mail institucional"}),
             "matricula": forms.TextInput(attrs={"placeholder": "Matrícula"}),
+            "first_access": forms.CheckboxInput(),
+        }
+        labels = {
+            "first_access": "Primeiro acesso",
         }
 
 
@@ -219,14 +232,30 @@ class UserUpdateForm(forms.ModelForm):
 
         return cleaned
 
+    def clean_matricula(self):
+        return normalize_matricula(self.cleaned_data["matricula"])
+
     class Meta:
         model = User
-        fields = ["full_name", "email", "matricula", "vinculo", "area", "department", "cargo"]
+        fields = ["full_name", "email", "matricula", "vinculo", "area", "department", "cargo", "first_access"]
         widgets = {
             "full_name": forms.TextInput(attrs={"placeholder": "Nome completo"}),
             "email": forms.EmailInput(attrs={"placeholder": "E-mail institucional"}),
             "matricula": forms.TextInput(attrs={"placeholder": "Matrícula"}),
+            "first_access": forms.CheckboxInput(),
         }
+        labels = {
+            "first_access": "Primeiro acesso",
+        }
+
+
+class FirstAccessPasswordChangeForm(PasswordChangeForm):
+    def clean_new_password2(self):
+        password = super().clean_new_password2()
+        old_password = self.cleaned_data.get("old_password")
+        if password and old_password and password == old_password:
+            raise forms.ValidationError("A nova senha deve ser diferente da senha atual.")
+        return password
 
 
 class TicketCreateForm(forms.ModelForm):

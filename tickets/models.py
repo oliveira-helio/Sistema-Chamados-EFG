@@ -38,6 +38,8 @@ DEPARTMENT_CHOICES = [
     ("MANUTENCAO", "Manutenção"),
     ("ESTAGIO", "Estágio"),
     ("MONITORIA", "Monitoria"),
+    ("RECURSOS_HUMANOS", "Recursos humanos"),
+    ("NUCLEO_EAD", "Núcleo de EAD"),
     ("SECRETARIA", "Secretaria"),
     ("STAI", "Stai"),
     ("COORDENACAO_PEDAGOGICA", "Coordenação pedagógica"),
@@ -62,6 +64,8 @@ DEPARTMENTS_BY_AREA = {
         ("MANUTENCAO", "Manutenção"),
         ("ESTAGIO", "Estágio"),
         ("MONITORIA", "Monitoria"),
+        ("RECURSOS_HUMANOS", "Recursos humanos"),
+        ("NUCLEO_EAD", "Núcleo de EAD"),
     ],
     "SECRETARIA": [
         ("SECRETARIA", "Secretaria"),
@@ -109,6 +113,13 @@ CARGO_CHOICES_BY_DEPARTMENT = {
     ],
     "MONITORIA": [
         ("MONITOR_PATIO", "Monitor(a) de Pátio"),
+    ],
+    "RECURSOS_HUMANOS": [
+        ("ANALISTA_RH", "Analista de RH"),
+    ],
+    "NUCLEO_EAD": [
+        ("SUPERVISOR_EAD", "Supervisor EAD"),
+        ("SUPERVISOR_INFRA_TI_SUPORTE_EAD", "Supervisor de Infraestrutura de TI e Suporte EAD"),
     ],
     "SECRETARIA": [
         ("SECRETARIO", "Secretario(a)"),
@@ -167,6 +178,8 @@ def area_for_department(department):
         "MANUTENCAO": "VICE_DIRETORIA",
         "ESTAGIO": "VICE_DIRETORIA",
         "MONITORIA": "VICE_DIRETORIA",
+        "RECURSOS_HUMANOS": "VICE_DIRETORIA",
+        "NUCLEO_EAD": "VICE_DIRETORIA",
         "SECRETARIA": "SECRETARIA",
         "STAI": "STAI",
         "COORDENACAO_PEDAGOGICA": "COORDENACAO_PEDAGOGICA",
@@ -184,6 +197,13 @@ def departments_for_area(area):
 
 def cargos_for_department(department):
     return [("", "Selecione o cargo")] + list(CARGO_CHOICES_BY_DEPARTMENT.get(department, []))
+
+
+def normalize_matricula(value):
+    value = str(value or "").strip()
+    if value.isdigit():
+        return value.lstrip("0") or "0"
+    return value
 
 
 TICKET_STATUS = [
@@ -219,6 +239,7 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError("O e-mail é obrigatório.")
         email = self.normalize_email(email)
+        matricula = normalize_matricula(matricula)
         user = self.model(matricula=matricula, email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -252,17 +273,25 @@ class User(AbstractUser):
     department = models.CharField(max_length=40, choices=DEPARTMENT_CHOICES, blank=True, default="")
     cargo = models.CharField(max_length=40, choices=CARGO_CHOICES, default="TEC_INFORMATICA")
     phone = models.CharField(max_length=30, blank=True)
+    first_access = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
     USERNAME_FIELD = "matricula"
     REQUIRED_FIELDS = ["email", "full_name"]
 
     def save(self, *args, **kwargs):
+        self.matricula = normalize_matricula(self.matricula)
         self.is_staff = self.cargo in ADMIN_CARGOS or self.is_superuser
         super().save(*args, **kwargs)
 
     def clean(self):
         super().clean()
+        self.matricula = normalize_matricula(self.matricula)
+        if self.matricula:
+            for other_id, other_matricula in User.objects.exclude(pk=self.pk).values_list("pk", "matricula"):
+                if normalize_matricula(other_matricula) == self.matricula:
+                    raise ValidationError({"matricula": "Usuário com esta Matrícula já existe."})
+
         if self.vinculo == "PROFESSOR":
             self.area = "COORDENACAO_PEDAGOGICA"
             self.department = "DOCENCIA"
@@ -446,18 +475,19 @@ class ChangeLog(models.Model):
     ]
 
     ACTION_CHOICES = [
-        ("CREATE", "Criacao"),
-        ("UPDATE", "Edicao"),
+        ("CREATE", "Criação"),
+        ("UPDATE", "Edição"),
         ("PASSWORD", "Troca de senha"),
-        ("ACTIVATE", "Ativacao"),
-        ("DEACTIVATE", "Inativacao"),
-        ("PUBLISH", "Publicacao"),
-        ("UNPUBLISH", "Despublicacao"),
+        ("FIRST_ACCESS_PASSWORD", "Troca de senha no primeiro acesso"),
+        ("ACTIVATE", "Ativação"),
+        ("DEACTIVATE", "Inativação"),
+        ("PUBLISH", "Publicação"),
+        ("UNPUBLISH", "Despublicação"),
     ]
 
     entity_type = models.CharField(max_length=20, choices=ENTITY_CHOICES)
     entity_id = models.PositiveIntegerField()
-    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    action = models.CharField(max_length=40, choices=ACTION_CHOICES)
     before_data = models.JSONField(default=dict, blank=True)
     after_data = models.JSONField(default=dict, blank=True)
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="change_logs")

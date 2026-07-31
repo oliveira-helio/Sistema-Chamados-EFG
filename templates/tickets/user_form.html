@@ -30,6 +30,8 @@
     {{ form.department.errors }}
     <label>Cargo {{ form.cargo }}</label>
     {{ form.cargo.errors }}
+    <label class="inline-checkbox">{{ form.first_access }} {{ form.first_access.label }}</label>
+    {{ form.first_access.errors }}
 
     {% if form.password1 %}
       <label>Senha {{ form.password1 }}</label>
@@ -72,6 +74,8 @@
         { value: "MANUTENCAO", label: "Manutenção" },
         { value: "ESTAGIO", label: "Estágio" },
         { value: "MONITORIA", label: "Monitoria" },
+        { value: "RECURSOS_HUMANOS", label: "Recursos humanos" },
+        { value: "NUCLEO_EAD", label: "Núcleo de EAD" },
       ],
       SECRETARIA: [{ value: "SECRETARIA", label: "Secretaria" }],
       STAI: [{ value: "STAI", label: "Stai" }],

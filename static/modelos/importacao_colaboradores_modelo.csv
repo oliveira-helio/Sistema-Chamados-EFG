@@ -1,4 +1,4 @@
-matricula;nome_completo;email;vinculo;area;departamento;cargo;senha;telefone;ativo
-100001;Maria da Silva;maria.silva@escola.local;ADMINISTRATIVO;VICE_DIRETORIA;TI;TEC_INFORMATICA;Senha@123;62999990001;sim
-100002;Joao Pereira;joao.pereira@escola.local;PROFESSOR;COORDENACAO_PEDAGOGICA;DOCENCIA;HORISTA;Senha@123;62999990002;sim
-100003;Ana Souza;ana.souza@escola.local;ADMINISTRATIVO;SECRETARIA;SECRETARIA;SECRETARIO;Senha@123;62999990003;sim
+matricula;nome_completo;email;vinculo;area;departamento;cargo;senha;telefone;ativo;primeiro_acesso
+100001;Maria da Silva;maria.silva@escola.local;ADMINISTRATIVO;VICE_DIRETORIA;TI;TEC_INFORMATICA;123456;62999990001;sim;sim
+100002;Joao Pereira;joao.pereira@escola.local;PROFESSOR;COORDENACAO_PEDAGOGICA;DOCENCIA;HORISTA;123456;62999990002;sim;sim
+100003;Ana Souza;ana.souza@escola.local;ADMINISTRATIVO;SECRETARIA;SECRETARIA;SECRETARIO;123456;62999990003;sim;sim

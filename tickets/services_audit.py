@@ -7,6 +7,7 @@ def serialize_user_for_audit(user):
         "area": user.area,
         "department": user.department,
         "cargo": user.cargo,
+        "first_access": user.first_access,
         "is_active": user.is_active,
     }
 
